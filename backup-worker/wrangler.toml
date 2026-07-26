@@ -1,0 +1,49 @@
+name = "backupelhadidi"
+main = "src/index.js"
+compatibility_date = "2026-07-26"
+compatibility_flags = ["nodejs_compat"]
+
+workers_dev = true
+
+# ==========================================
+# R2 Bucket Binding
+# ==========================================
+
+[[r2_buckets]]
+binding = "elhadidy"
+bucket_name = "elhadidi"
+
+# ==========================================
+# Observability
+# ==========================================
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+
+# ==========================================
+# Cron Trigger - Daily Backup at 00:00 UTC
+# ==========================================
+
+[triggers]
+crons = [
+  "0 0 * * *"
+]
+
+# ==========================================
+# Public Environment Variables
+# ==========================================
+
+[vars]
+API_VERSION = "1.0.0"
+SERVICE_NAME = "BackupElhadidi API"
+
+# ==========================================
+# Secrets (DO NOT WRITE HERE)
+# Set these using:
+#   wrangler secret put API_KEY
+#   wrangler secret put FISH_DB_URL
+#   wrangler secret put TAGER_DB_URL
+# ==========================================
