@@ -1818,12 +1818,12 @@ function buildFishRowHTML(item) {
 window.onFishInput = function(id) {
   const item = window.appState.fishItems.find(x => x.id === id);
   if (!item) return;
-  const qty = intVal(document.getElementById('fish-qty-' + id)?.value);
-  const price = intVal(document.getElementById('fish-price-' + id)?.value);
+  const qty = floatVal2(document.getElementById('fish-qty-' + id)?.value);
+  const price = floatVal2(document.getElementById('fish-price-' + id)?.value);
   const uDef = UNITS[item.unit] || UNITS.kg;
   item.qty = qty; item.price = price;
-  item.kg = qty * uDef.kgFactor;
-  item.subtotal = Math.round(qty * price);
+  item.kg = parseFloat((qty * uDef.kgFactor).toFixed(2));
+  item.subtotal = parseFloat((qty * price).toFixed(2));
   const subEl = document.getElementById('fish-subtotal-' + id);
   if (subEl) subEl.value = item.subtotal > 0 ? item.subtotal : '';
   const totalEl = document.getElementById('fish-total-' + id);
@@ -5354,6 +5354,12 @@ function formatNum(n) { return Math.round(n || 0).toLocaleString('ar-EG'); }
 // أعداد صحيحة فقط في كل مكان - لا كسور
 function intVal(v) { return Math.round(parseFloat(v) || 0); }
 window.intVal = intVal;
+// دالة للأرقام العشرية - تحافظ على رقمين بعد الفاصلة (للسعر والكمية)
+function floatVal2(v) {
+  const n = parseFloat(v);
+  return isNaN(n) ? 0 : parseFloat(n.toFixed(2));
+}
+window.floatVal2 = floatVal2;
 // منع كتابة الفاصلة العشرية أو الأس في حقول الأرقام (أعداد صحيحة فقط)
 window.blockDecimalKey = function(e) {
   if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '+') {
@@ -5836,11 +5842,11 @@ window.calcEditInvoice = function() {
   // احسب إجمالي الأصناف دائماً من حقول الأصناف
   let itemsGross = 0;
   (window._editItems || []).forEach((item, idx) => {
-    const kg = intVal(document.getElementById('ei-kg-' + idx)?.value);
-    const price = intVal(document.getElementById('ei-price-' + idx)?.value);
+    const kg = floatVal2(document.getElementById('ei-kg-' + idx)?.value);
+    const price = floatVal2(document.getElementById('ei-price-' + idx)?.value);
     itemsGross += kg * price;
   });
-  itemsGross = Math.round(itemsGross);
+  itemsGross = parseFloat(itemsGross.toFixed(2));
 
   let newFishGross;
   if (window._eiOverrides.gross) {
