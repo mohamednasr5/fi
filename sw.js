@@ -1,312 +1,174 @@
 /* ===========================================================
-   Service Worker — مزرعة الحديدي للاستزراع السمكي
-   Professional PWA Service Worker v3.0
-   
-   Features:
-   - App Shell caching with version control
-   - Network-first for Firebase / live data
-   - Stale-while-revalidate for static assets
-   - Offline fallback page
-   - Background sync support
-   - Cache cleanup on update
+   Service Worker — الحديدي للأسماك (Home Sub-App)
+   - Professional PWA with full offline support
+   - Cache-first for static assets
+   - Network-first for API calls
    =========================================================== */
 
-const CACHE_VERSION = 'fish-farm-v3.0-pro';
-const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
-const OFFLINE_PAGE = './offline.html';
+const CACHE_NAME = 'fish-home-v3.0-pro';
+const STATIC_CACHE = 'fish-home-static-v3';
+const DYNAMIC_CACHE = 'fish-home-dynamic-v3';
 
-/* ============ APP SHELL ============ */
-const APP_SHELL = [
+// Assets to cache on install
+const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './tager.html',
+  './fish.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap'
+  './icons/icon-192x192.png',
+  './icons/icon-512x512.png'
 ];
 
-/* ============ INSTALL EVENT ============ */
+// Install event - Pre-cache critical assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing v3.0...');
-  
+  console.log('[SW Home] Installing version:', CACHE_NAME);
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then(cache => {
-        console.log('[SW] Caching app shell');
-        return cache.addAll(APP_SHELL).catch(err => {
-          console.warn('[SW] Some shell resources failed to cache:', err);
-        });
-      })
-      .then(() => self.skipWaiting())
+    caches.open(STATIC_CACHE).then(cache => {
+      return cache.addAll(ASSETS_TO_CACHE).catch(err => {
+        console.warn('[SW Home] Some assets failed to cache:', err);
+      });
+    }).then(() => {
+      console.log('[SW Home] App shell cached');
+      return self.skipWaiting();
+    })
   );
 });
 
-/* ============ ACTIVATE EVENT ============ */
+// Activate event - Clean old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating v3.0...');
-  
+  console.log('[SW Home] Activating version:', CACHE_NAME);
   event.waitUntil(
-    caches.keys()
-      .then(keys => {
-        return Promise.all(
-          keys
-            .filter(key => key.startsWith('fish-farm-') && !key.includes(CACHE_VERSION))
-            .map(key => {
-              console.log('[SW] Deleting old cache:', key);
-              return caches.delete(key);
-            })
-        );
-      })
-      .then(() => {
-        console.log('[SW] Claiming clients');
-        return self.clients.claim();
-      })
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.filter(key => 
+          key !== STATIC_CACHE && 
+          key !== DYNAMIC_CACHE && 
+          !key.startsWith('fish-home')
+        ).map(key => {
+          console.log('[SW Home] Deleting old cache:', key);
+          return caches.delete(key);
+        })
+      );
+    }).then(() => {
+      console.log('[SW Home] Claiming clients');
+      return self.clients.claim();
+    })
   );
 });
 
-/* ============ FETCH STRATEGY ============ */
+// Fetch event - Smart caching strategies
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
-  // Skip non-GET requests
+
+  // Only handle GET requests
   if (request.method !== 'GET') return;
-  
-  // Skip Firebase auth/API calls - always network
-  if (isFirebaseRequest(url)) {
-    return;
-  }
-  
-  // Navigation requests - Network first, fallback to cache, then offline page
-  if (request.mode === 'navigate') {
-    event.respondWith(handleNavigation(request));
-    return;
-  }
-  
-  // Static assets (images, fonts, CSS) - Stale while revalidate
-  if (isStaticAsset(url)) {
-    event.respondWith(staleWhileRevalidate(request));
-    return;
-  }
-  
-  // API calls - Network first with cache fallback
-  if (isAPIRequest(url)) {
-    event.respondWith(networkFirst(request));
-    return;
-  }
-  
-  // Default: Cache first with network fallback
-  event.respondWith(cacheFirst(request));
-});
 
-/* ============ FETCH STRATEGIES ============ */
+  // Skip non-http(s)
+  if (!url.protocol.startsWith('http')) return;
 
-async function handleNavigation(request) {
-  try {
-    const networkResponse = await fetch(request);
+  // Network-first for Firebase/API calls
+  if (url.hostname.includes('firebase') || 
+      url.hostname.includes('googleapis') ||
+      url.pathname.includes('.json')) {
     
-    // Cache successful responses
-    if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-  } catch (error) {
-    // Try cache
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) return cachedResponse;
-    
-    // Fallback to cached index or offline page
-    const cachedIndex = await caches.match('./index.html');
-    if (cachedIndex) return cachedIndex;
-    
-    // Return offline page if available
-    const offlinePage = await caches.match(OFFLINE_PAGE);
-    if (offlinePage) return offlinePage;
-    
-    // Final fallback
-    return new Response(
-      '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>غير متصل</title>' +
-      '<style>body{font-family:Cairo,sans-serif;display:flex;align-items:center;justify-content:center;' +
-      'min-height:100vh;margin:0;background:#040d1a;color:#e8f4fc;text-align:center;padding:20px}' +
-      '.offline-icon{font-size:80px;margin-bottom:20px}.offline-title{font-size:24px;font-weight:900;color:#00e5ff}' +
-      '.offline-msg{color:#7aa2c4;margin-top:10px}.retry-btn{margin-top:24px;padding:14px 28px;' +
-      'background:linear-gradient(135deg,#00b4d8,#00e5ff);border:none;border-radius:12px;color:#021020;' +
-      'font-family:Cairo,sans-serif;font-weight:800;font-size:16px;cursor:pointer}</style></head>' +
-      '<body><div><div class="offline-icon">🐟</div><div class="offline-title">أنت غير متصل بالإنترنت</div>' +
-      '<div class="offline-msg">تحقق من اتصالك بالإنترنت وحاول مرة أخرى</div>' +
-      '<button class="retry-btn" onclick="window.location.reload()">🔄 إعادة المحاولة</button></div></body></html>',
-      {
-        status: 503,
-        statusText: 'Service Unavailable',
-        headers: new Headers({ 'Content-Type': 'text/html; charset=utf-8' })
-      }
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
     );
-  }
-}
-
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(DYNAMIC_CACHE);
-  const cachedResponse = await cache.match(request);
-  
-  const fetchPromise = fetch(request)
-    .then(networkResponse => {
-      if (networkResponse.ok) {
-        cache.put(request, networkResponse.clone());
-      }
-      return networkResponse;
-    })
-    .catch(() => cachedResponse);
-  
-  return cachedResponse || fetchPromise;
-}
-
-async function networkFirst(request) {
-  const cache = await caches.open(DYNAMIC_CACHE);
-  
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (error) {
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) return cachedResponse;
-    throw error;
-  }
-}
-
-async function cacheFirst(request) {
-  const cache = await caches.open(DYNAMIC_CACHE);
-  const cachedResponse = await cache.match(request);
-  
-  if (cachedResponse) return cachedResponse;
-  
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (error) {
-    return new Response('', { status: 404 });
-  }
-}
-
-/* ============ HELPER FUNCTIONS ============ */
-
-function isFirebaseRequest(url) {
-  return url.hostname.includes('firebase') ||
-         url.hostname.includes('googleapis.com') ||
-         url.hostname.includes('gstatic.com') ||
-         url.pathname.includes('/identitytoolkit');
-}
-
-function isStaticAsset(url) {
-  const staticExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.woff', '.woff2', '.ttf', '.eot', '.css'];
-  return staticExtensions.some(ext => url.pathname.endsWith(ext)) ||
-         url.hostname.includes('fonts.googleapis.com') ||
-         url.hostname.includes('fonts.gstatic.com');
-}
-
-function isAPIRequest(url) {
-  return url.pathname.includes('/api/') ||
-         url.pathname.includes('.json');
-}
-
-/* ============ MESSAGE HANDLER ============ */
-self.addEventListener('message', (event) => {
-  const { data } = event;
-  
-  if (data === 'SKIP_WAITING') {
-    self.skipWaiting();
     return;
   }
-  
-  if (data && data.type === 'SKIP_WAITING_AND_RELOAD') {
-    self.skipWaiting().then(() => {
-      event.source.postMessage({ type: 'RELOAD_NEEDED' });
-    });
+
+  // Cache-first for static assets (images, fonts, css, js)
+  if (request.destination === 'image' || 
+      request.destination === 'font' || 
+      request.destination === 'style' || 
+      request.destination === 'script' ||
+      url.pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|css|js)$/)) {
+    
+    event.respondWith(
+      caches.match(request).then(cached => {
+        if (cached) {
+          // Stale-while-revalidate: serve cache, update in background
+          fetch(request).then(response => {
+            if (response.ok) {
+              caches.open(STATIC_CACHE).then(cache => cache.put(request, response));
+            }
+          }).catch(() => {});
+          return cached;
+        }
+
+        return fetch(request).then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then(cache => cache.put(request, clone));
+          }
+          return response;
+        });
+      })
+    );
     return;
   }
-  
-  if (data && data.type === 'GET_VERSION') {
-    event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
+
+  // Network-first for navigation (HTML documents)
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
     return;
   }
-  
-  if (data && data.type === 'CLEAR_CACHE') {
-    caches.keys().then(keys => {
-      keys.forEach(key => caches.delete(key));
-    });
-    return;
-  }
-});
 
-/* ============ BACKGROUND SYNC ============ */
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync:', event.tag);
-  
-  if (event.tag === 'sync-data') {
-    event.waitUntil(syncData());
-  }
-});
-
-async function syncData() {
-  // Sync pending operations when back online
-  console.log('[SW] Syncing pending data...');
-  // Implementation depends on app's IndexedDB/localStorage structure
-}
-
-/* ============ PUSH NOTIFICATIONS ============ */
-self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data ? event.data.text() : 'تحديث جديد من مزرعة الحديدي',
-    icon: './icon-192.png',
-    badge: './icon-192.png',
-    dir: 'rtl',
-    lang: 'ar',
-    vibrate: [200, 100, 200],
-    tag: 'fish-farm-notification',
-    renotify: true,
-    actions: [
-      { action: 'open', title: 'فتح التطبيق', icon: './icon-192.png' },
-      { action: 'dismiss', title: 'إغلاق' }
-    ],
-    data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
-    }
-  };
-  
-  event.waitUntil(
-    self.registration.showNotification('مزرعة الحديدي', options)
+  // Default: Network with cache fallback
+  event.respondWith(
+    fetch(request)
+      .then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(DYNAMIC_CACHE).then(cache => cache.put(request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
+// Message handling
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
   
-  if (event.action === 'open' || !event.action) {
-    event.waitUntil(
-      clients.openWindow('./index.html')
-    );
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.source.postMessage({ type: 'VERSION', version: CACHE_NAME });
   }
 });
 
-/* ============ PERIODIC SYNC (Chrome/Edge) ============ */
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'check-updates') {
-    event.waitUntil(checkForUpdates());
-  }
+// Notify clients of updates
+self.addEventListener('controllerchange', () => {
+  console.log('[SW Home] New controller activated');
+  self.clients.matchAll().then(clients => {
+    clients.forEach(client => {
+      client.postMessage({ type: 'SW_UPDATED', version: CACHE_NAME });
+    });
+  });
 });
-
-async function checkForUpdates() {
-  console.log('[SW] Checking for updates...');
-  // Check for new data from server
-}
-
-console.log('[SW] Service Worker v3.0 loaded successfully');
