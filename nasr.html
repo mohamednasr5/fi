@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 نظام النسخ الاحتياطي - Elhadidi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 50px;
+            margin-top: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+
+        .card-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .card p {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .result-header h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .close-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .result-content {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            direction: ltr;
+            text-align: left;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .backups-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .backup-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .backup-item:hover {
+            background: #e9ecef;
+            transform: translateX(-5px);
+        }
+
+        .backup-id {
+            font-weight: bold;
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+
+        .restore-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .restore-btn:hover {
+            background: #ff3344;
+            transform: scale(1.05);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            animation: modalSlide 0.3s ease;
+        }
+
+        @keyframes modalSlide {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-content h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .modal-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .modal-btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            padding: 20px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8em; }
+            .cards-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔄 نظام النسخ الاحتياطي</h1>
+            <p>Elhadidi Backup System - إدارة النسخ الاحتياطية بسهولة</p>
+            <span class="status-badge" id="statusBadge">🟢 متصل</span>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="cards-grid">
+            <!-- Create Backup Card -->
+            <div class="card">
+                <div class="card-icon">💾</div>
+                <h3>نسخة احتياطية جديدة</h3>
+                <p>إنشاء نسخة احتياطية فورية من جميع قواعد البيانات</p>
+                <button class="btn btn-primary" onclick="createBackup()" id="backupBtn">
+                    🚀 إنشاء نسخة الآن
+                </button>
+            </div>
+
+            <!-- View Backups Card -->
+            <div class="card">
+                <div class="card-icon">📦</div>
+                <h3>عرض جميع النسخ</h3>
+                <p>عرض قائمة بجميع النسخ الاحتياطية المحفوظة</p>
+                <button class="btn btn-info" onclick="listBackups()" id="listBtn">
+                    📋 عرض النسخ
+                </button>
+            </div>
+
+            <!-- Latest Backup Card -->
+            <div class="card">
+                <div class="card-icon">⭐</div>
+                <h3>آخر نسخة</h3>
+                <p>عرض تفاصيل آخر نسخة احتياطية تم إنشاؤها</p>
+                <button class="btn btn-success" onclick="getLatestBackup()" id="latestBtn">
+                    🔍 عرض آخر نسخة
+                </button>
+            </div>
+
+            <!-- Stats Card -->
+            <div class="card">
+                <div class="card-icon">📊</div>
+                <h3>الإحصائيات</h3>
+                <p>عرض إحصائيات التخزين والنسخ الاحتياطية</p>
+                <button class="btn btn-warning" onclick="getStats()" id="statsBtn">
+                    📈 عرض الإحصائيات
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="result-section" id="resultSection">
+            <div class="result-header">
+                <h2 id="resultTitle">النتيجة</h2>
+                <button class="close-btn" onclick="closeResult()">✕ إغلاق</button>
+            </div>
+            <div id="alertContainer"></div>
+            <div class="result-content" id="resultContent"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>🛡️ Backup Worker v1.0 | Cloudflare Workers + R2 | آمن وسريع</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">النسخ التلقائي: يومياً الساعة 02:00 صباحاً (توقيت مصر)</p>
+        </div>
+    </div>
+
+    <!-- Restore Confirmation Modal -->
+    <div class="modal" id="restoreModal">
+        <div class="modal-content">
+            <h3>⚠️ تأكيد الاستعادة</h3>
+            <p>هل أنت متأكد من استعادة النسخة:</p>
+            <p style="font-weight: bold; color: #667eea; margin: 15px 0;" id="modalBackupId"></p>
+            <p style="color: #666; font-size: 0.9em;">⚡ سيتم استبدال البيانات الحالية بهذه النسخة!</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-danger" onclick="confirmRestore()">✅ نعم، استعد</button>
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal()">❌ إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = 'https://backupelhadidi.nonm1724.workers.dev';
+        const API_KEY = '521988';
+
+        // Current backup ID for restore
+        let currentBackupId = null;
+
+        // API Call Function
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const options = {
+                method,
+                headers: {
+                    'x-api-key': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            if (body && method === 'POST') {
+                options.body = JSON.stringify(body);
+            }
+
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, options);
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+
+        // Show Result
+        function showResult(title, content, type = 'info') {
+            const section = document.getElementById('resultSection');
+            const titleEl = document.getElementById('resultTitle');
+            const contentEl = document.getElementById('resultContent');
+            const alertEl = document.getElementById('alertContainer');
+
+            titleEl.textContent = title;
+            contentEl.textContent = JSON.stringify(content, null, 2);
+
+            // Show alert
+            let alertClass = 'alert-info';
+            let alertIcon = 'ℹ️';
+            
+            if (type === 'success') {
+                alertClass = 'alert-success';
+                alertIcon = '✅';
+            } else if (type === 'error') {
+                alertClass = 'alert-error';
+                alertIcon = '❌';
+            }
+
+            alertEl.innerHTML = `
+                <div class="alert ${alertClass}">
+                    ${alertIcon} ${type === 'success' ? 'تمت العملية بنجاح!' : type === 'error' ? 'حدث خطأ!' : 'نتيجة العملية'}
+                </div>
+            `;
+
+            section.classList.add('active');
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Close Result
+        function closeResult() {
+            document.getElementById('resultSection').classList.remove('active');
+        }
+
+        // Set Button Loading State
+        function setButtonLoading(btnId, loading, text = '') {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="loading"></span> جاري التنفيذ...`;
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = text || btn.dataset.originalText;
+            }
+        }
+
+        // Save Original Text
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.dataset.originalText = btn.innerHTML;
+        });
+
+        // ==================== API Functions ====================
+
+        // Create Backup
+        async function createBackup() {
+            setButtonLoading('backupBtn', true);
+            
+            try {
+                const result = await apiCall('/backup', 'POST');
+                
+                if (result.success) {
+                    showResult('✅ تم إنشاء النسخة بنجاح!', result, 'success');
+                    
+                    // Show nice summary
+                    if (result.data && result.data.backup) {
+                        const info = `
+🎉 **تفاصيل النسخة الجديدة**
+
+📁 اسم النسخة: ${result.data.backup}
+⏰ وقت الإنشاء: ${new Date().toLocaleString('ar-EG')}
+📊 الحالة: ${result.data.changed ? 'جديدة (تم تغيير البيانات)' : 'لم تتغير البيانات'}
+
+📈 معلومات قواعد البيانات:
+   • Fish: ${result.data.info?.databases?.fish?.size || 'N/A'} (${result.data.info?.databases?.fish?.records || 0} سجل)
+   • Tager: ${result.data.info?.databases?.tager?.size || 'N/A'} (${result.data.info?.databases?.tager?.records || 0} سجل)
+
+🔐 Hash: ${result.data.info?.hashes?.masterHash?.substring(0, 20)}...
+                        `;
+                        document.getElementById('resultContent').textContent = info;
+                    }
+                } else {
+                    showResult('❌ فشل إنشاء النسخة', result, 'error');
+                }
+            } catch (error) {
+                showResult('❌ خطأ في الاتصال', { error: error.message }, 'error');
+            }
+            
+            setButtonLoading('backupBtn', false);
+        }
+
+        // List Backups
+        async function listBackups() {
+            setButtonLoading('listBtn', true);
+            
+            try {
+                const result = await apiCall('/backups');
+                
+                if (result.success) {
+                    const backups = result.data || [];
+                    
+                    if (backups.length === 0) {
+                        showResult('📦 لا توجد نسخ بعد', 'لم يتم إنشاء أي نسخة احتياطية بعد.', 'info');
+                    } else {
+                        // Create HTML list
+                        let html = `
+📦 **قائمة النسخ الاحتياطية** (${backups.length} نسخة)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+`;
+                        
+                        backups.forEach((backup, index) => {
+                            const date = backup.replace(/_/g, ' ').replace(/-/g, ':');
+                            html += `${index + 1}. 📁 ${backup}\n   ⏰ ${date}\n\n`;
+                        });
+
+                        html += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 انقر على زر "استعادة" بجانب أي نسخة لاستعادتها
+                        `;
+                        
+                        showResult(`📦 جميع النسخ (${backups.length})`, html, 'success');
+                        
+                        // Add restore buttons in content
+                        let contentHtml = '<div class="backups-list">';
+                        backups.forEach(backup => {
+                            contentHtml += `
+                                <div class="backup-item">
+                                    <span class="backup-id">📁 ${backup}</span>
+                                    <button class="restore-btn" onclick="showRestoreModal('${backup}')">
+                                        🔄 استعادة
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        contentHtml += '</div>';
+                        document.getElementById('resultContent').innerHTML = contentHtml;
+                    }
+                } else {
+                    showResult('❌ خطأ في جلب النسخ', result, 'error');
+                }
+            } catch (error) {
+                showResult('❌ خطأ في الاتصال', { error: error.message }, 'error');
+            }
+            
+            setButtonLoading('listBtn', false);
+        }
+
+        // Get Latest Backup
+        async function getLatestBackup() {
+            setButtonLoading('latestBtn', true);
+            
+            try {
+                const result = await apiCall('/latest');
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    const info = `
+⭐ **آخر نسخة احتياطية**
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 معرف النسخة: ${data.info?.id || 'N/A'}
+⏰ وقت الإنشاء: ${data.info?.createdAt ? new Date(data.info.createdAt).toLocaleString('ar-EG') : 'N/A'}
+🔄 سبب النسخ: ${data.info?.reason || 'N/A'}
+📊 الإصدار: ${data.info?.version || 'N/A'}
+🤖 الـ Worker: ${data.info?.worker || 'N/A'}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 **إحصائيات قواعد البيانات:**
+
+🐟 Fish Database:
+   • الحجم: ${data.info?.databases?.fish?.size || 'N/A'}
+   • عدد السجلات: ${data.info?.databases?.fish?.records || 0}
+
+🏷️ Tager Database:
+   • الحجم: ${data.info?.databases?.tager?.size || 'N/A'}
+   • عدد السجلات: ${data.info?.databases?.tager?.records || 0}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔐 **معلومات التحقق:**
+• Fish Hash: ${data.info?.hashes?.fishHash?.substring(0, 20)}...
+• Tager Hash: ${data.info?.hashes?.tagerHash?.substring(0, 20)}...
+• Master Hash: ${data.info?.hashes?.masterHash?.substring(0, 20)}...
+                    `;
+                    
+                    showResult('⭐ آخر نسخة احتياطية', info, 'success');
+                } else {
+                    showResult('ℹ️ لا توجد نسخ', 'لم يتم العثور على أي نسخة احتياطية.', 'info');
+                }
+            } catch (error) {
+                showResult('❌ خطأ في الاتصال', { error: error.message }, 'error');
+            }
+            
+            setButtonLoading('latestBtn', false);
+        }
+
+        // Get Stats
+        async function getStats() {
+            setButtonLoading('statsBtn', true);
+            
+            try {
+                const result = await apiCall('/stats');
+                
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    const statsHTML = `
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">${data.files}</div>
+        <div class="stat-label">📁 عدد الملفات</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">${data.kb}</div>
+        <div class="stat-label">💾 الحجم (KB)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">${data.mb}</div>
+        <div class="stat-label">💿 الحجم (MB)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">${data.bytes}</div>
+        <div class="stat-label">🔢 بايت</div>
+    </div>
+</div>
+
+<pre style="margin-top: 20px; background: #f8f9fa; padding: 15px; border-radius: 10px;">
+📊 **إحصائيات التخزين الكاملة**
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 إجمالي الملفات: ${data.files}
+📦 الحجم بالبايت: ${data.bytes.toLocaleString()}
+💾 الحجم بالكيلوبايت: ${parseFloat(data.kb).toLocaleString()} KB
+💿 الحجم بالميجابايت: ${parseFloat(data.mb).toLocaleString()} MB
+
+🗄️ نوع التخزين: Cloudflare R2
+🌐 موقع الخوادم: عالمي (Edge Network)
+⚡ سرعة الوصول: فورية
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ المساحة المتاحة: غير محدودة تقريباً!
+</pre>
+                    `;
+                    
+                    showResult('📊 الإحصائيات', statsHTML, 'success');
+                    document.getElementById('resultContent').innerHTML = statsHTML;
+                } else {
+                    showResult('❌ خطأ', result, 'error');
+                }
+            } catch (error) {
+                showResult('❌ خطأ في الاتصال', { error: error.message }, 'error');
+            }
+            
+            setButtonLoading('statsBtn', false);
+        }
+
+        // ==================== Restore Functions ====================
+
+        // Show Restore Modal
+        function showRestoreModal(backupId) {
+            currentBackupId = backupId;
+            document.getElementById('modalBackupId').textContent = backupId;
+            document.getElementById('restoreModal').classList.add('active');
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('restoreModal').classList.remove('active');
+            currentBackupId = null;
+        }
+
+        // Confirm Restore
+        async function confirmRestore() {
+            if (!currentBackupId) return;
+            
+            closeModal();
+            
+            // Show loading
+            showResult('🔄 جاري الاستعادة...', 'يرجى الانتظار...', 'info');
+            
+            try {
+                const result = await apiCall('/restore', 'POST', { 
+                    backupId: currentBackupId 
+                });
+                
+                if (result.success) {
+                    const restoreInfo = `
+✅ **تمت الاستعادة بنجاح!**
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 النسخة المستعادة: ${result.data.restored}
+⏰ وقت الاستعادة: ${new Date(result.data.restoredAt).toLocaleString('ar-EG')}
+📊 الإصدار: ${result.data.version}
+🗄️ قواعد البيانات: ${result.data.databases.join(', ')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ تم استعادة جميع البيانات بنجاح!
+                    `;
+                    showResult('🎉 تمت الاستعادة!', restoreInfo, 'success');
+                } else {
+                    showResult('❌ فشلت الاستعادة', result, 'error');
+                }
+            } catch (error) {
+                showResult('❌ خطأ في الاتصال', { error: error.message }, 'error');
+            }
+        }
+
+        // Check Status on Load
+        window.addEventListener('load', async () => {
+            try {
+                const health = await apiCall('/health');
+                if (health.success) {
+                    document.getElementById('statusBadge').textContent = '🟢 متصل - ' + new Date().toLocaleTimeString('ar-EG');
+                } else {
+                    document.getElementById('statusBadge').textContent = '🔴 غير متصل';
+                    document.getElementById('statusBadge').style.background = '#ff4757';
+                }
+            } catch (error) {
+                document.getElementById('statusBadge').textContent = '🔴 خطأ في الاتصال';
+                document.getElementById('statusBadge').style.background = '#ff4757';
+            }
+        });
+
+        // Close modal on outside click
+        document.getElementById('restoreModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
