@@ -1792,17 +1792,17 @@ function buildFishRowHTML(item) {
           <label id="fish-qty-lbl-${id}">الكمية (${uDef.label})</label>
           <input type="number" id="fish-qty-${id}"
             value="${item.qty > 0 ? item.qty : ''}"
-            placeholder="0" min="0" step="1" inputmode="numeric"
-            onkeydown="blockDecimalKey(event)"
-            oninput="sanitizeIntInput(this);onFishInput(${id})">
+            placeholder="0" min="0" step="0.01" inputmode="decimal"
+            onkeydown="blockMoreThan2Decimals(event)"
+            oninput="sanitizeDecimal2Input(this);onFishInput(${id})">
         </div>
         <div class="fish-input-group">
           <label id="fish-price-lbl-${id}">سعر ال${uDef.label}</label>
           <input type="number" id="fish-price-${id}"
             value="${item.price > 0 ? item.price : ''}"
-            placeholder="0" min="0" step="1" inputmode="numeric"
-            onkeydown="blockDecimalKey(event)"
-            oninput="sanitizeIntInput(this);onFishInput(${id})">
+            placeholder="0" min="0" step="0.01" inputmode="decimal"
+            onkeydown="blockMoreThan2Decimals(event)"
+            oninput="sanitizeDecimal2Input(this);onFishInput(${id})">
         </div>
         <div class="fish-input-group">
           <label>الإجمالي</label>
@@ -5360,6 +5360,33 @@ window.blockDecimalKey = function(e) {
     e.preventDefault();
   }
 };
+// منع كتابة أكثر من رقمين بعد الفاصلة العشرية (يسمح بـ 1.50 و 1.25 ولكن يمنع 1.2025)
+window.blockMoreThan2Decimals = function(e) {
+  const el = e.target;
+  const value = el.value;
+  // منع الأس والإشارات
+  if (e.key === 'e' || e.key === 'E' || e.key === '+') {
+    e.preventDefault();
+    return;
+  }
+  // السماح بالفاصلة أو النقطة
+  if (e.key === '.' || e.key === ',') {
+    // منع وجود فاصلة مسبقاً
+    if (value.includes('.') || value.includes(',')) {
+      e.preventDefault();
+      return;
+    }
+    return; // السماح بإدخال الفاصلة الأولى
+  }
+  // التحقق من عدد الأرقام بعد الفاصلة
+  const decimalPos = value.indexOf('.') !== -1 ? value.indexOf('.') : value.indexOf(',');
+  if (decimalPos !== -1) {
+    const decimalsAfterPoint = value.length - decimalPos - 1;
+    if (decimalsAfterPoint >= 2 && /[0-9]/.test(e.key)) {
+      e.preventDefault();
+    }
+  }
+};
 // تصحيح فوري لأي قيمة عشرية تدخل حقل رقمي (مثل اللصق) لتصبح عدد صحيح
 window.sanitizeIntInput = function(el) {
   if (!el) return 0;
@@ -5368,6 +5395,39 @@ window.sanitizeIntInput = function(el) {
     el.value = rounded === 0 && el.value.trim() === '' ? '' : rounded;
   }
   return rounded;
+};
+// تصحيح فوري لأي قيمة عشرية لتصبح برقمين كحد أقصى بعد الفاصلة (يسمح بـ 1400.5 و 1400.50 و 1.25)
+window.sanitizeDecimal2Input = function(el) {
+  if (!el) return 0;
+  let value = el.value.trim();
+  if (value === '') return 0;
+  
+  // السماح بالقيمة إذا تنتهي بنقطة (المستخدم ما زال يكتب)
+  if (value === '.' || value.endsWith('.')) {
+    return parseFloat(value) || 0;
+  }
+  
+  // استبدال الفاصلة العربية بنقطة
+  value = value.replace(/,/g, '.');
+  
+  // التحقق من صحة الرقم
+  const num = parseFloat(value);
+  if (isNaN(num)) {
+    el.value = '';
+    return 0;
+  }
+  
+  // التحقق من عدد الأرقام بعد الفاصلة - إذا أكثر من 2 نقصها
+  const parts = value.split('.');
+  if (parts.length > 1 && parts[1].length > 2) {
+    // إبقاء رقمين فقط بعد الفاصلة
+    const fixed = parseFloat(parts[0] + '.' + parts[1].substring(0, 2));
+    el.value = fixed;
+    return fixed;
+  }
+  
+  // السماح بالقيمة كما هي (1.5 أو 1.50 أو 125)
+  return num;
 };
 
 // ============================================================
@@ -5648,11 +5708,11 @@ window.editInvoiceModal = function(invoiceId) {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div>
                 <label id="ei-qty-lbl-${idx}" style="font-size:10px;color:var(--text-secondary);display:block;margin-bottom:3px">${UNITS[unit]?.label||'كيلو'}</label>
-                <input type="number" id="ei-kg-${idx}" class="form-input" value="${qty}" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)" oninput="sanitizeIntInput(this);calcEditInvoice()" style="padding:8px;text-align:center">
+                <input type="number" id="ei-kg-${idx}" class="form-input" value="${qty}" min="0" step="0.01" inputmode="decimal" onkeydown="blockMoreThan2Decimals(event)" oninput="sanitizeDecimal2Input(this);calcEditInvoice()" style="padding:8px;text-align:center">
               </div>
               <div>
                 <label id="ei-prc-lbl-${idx}" style="font-size:10px;color:var(--text-secondary);display:block;margin-bottom:3px">سعر ال${UNITS[unit]?.label||'كيلو'}</label>
-                <input type="number" id="ei-price-${idx}" class="form-input" value="${prc}" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)" oninput="sanitizeIntInput(this);calcEditInvoice()" style="padding:8px;text-align:center">
+                <input type="number" id="ei-price-${idx}" class="form-input" value="${prc}" min="0" step="0.01" inputmode="decimal" onkeydown="blockMoreThan2Decimals(event)" oninput="sanitizeDecimal2Input(this);calcEditInvoice()" style="padding:8px;text-align:center">
               </div>
             </div>
           </div>`;
