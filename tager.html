@@ -687,6 +687,18 @@
   .role-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; cursor: pointer; }
   .role-badge.admin { background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); }
   .role-badge.viewer { background: rgba(0,180,216,0.15); color: var(--cyan-glow); border: 1px solid rgba(0,180,216,0.3); }
+  .settings-gear-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0,180,216,0.12); border: 1px solid rgba(0,180,216,0.3);
+    color: var(--cyan-glow, #00b4d8); font-size: 13px; cursor: pointer;
+    transition: transform 0.3s ease, background 0.3s ease;
+  }
+  .settings-gear-btn:active { transform: rotate(90deg) scale(0.92); background: rgba(0,180,216,0.25); }
+  .db-stat-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .db-stat-mini { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 14px; padding: 12px; text-align: center; }
+  .db-stat-mini .n { font-size: 20px; font-weight: 900; color: var(--gold); }
+  .db-stat-mini .l { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
 
   .inv-date-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; background: rgba(0,180,216,0.1); border: 1px solid rgba(0,180,216,0.3); color: var(--cyan-glow); font-size: 12px; font-weight: 700; }
 
@@ -993,7 +1005,10 @@
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
       <div class="header-date" id="header-date"></div>
-      <div class="role-badge admin" id="role-badge" onclick="confirmLogout()">👑 أدمن • خروج</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="settings-gear-btn" onclick="openDbSettingsModal()" title="إعدادات قاعدة البيانات" aria-label="إعدادات قاعدة البيانات">⚙️</button>
+        <div class="role-badge admin" id="role-badge" onclick="confirmLogout()">👑 أدمن • خروج</div>
+      </div>
     </div>
   </header>
 
@@ -5326,6 +5341,131 @@ window.showToast = function(msg) {
 function formatNum(n) { return Math.round(n || 0).toLocaleString('ar-EG'); }
 
 // ============================================================
+// DATABASE SETTINGS / BACKUP / IMPORT (⚙️)
+// ============================================================
+const DB_BACKUP_KEY = 'tagerLastBackupDate';
+
+window.downloadDbBackup = async function(manual) {
+  try {
+    const snap = await get(ref(db, '/'));
+    const data = snap.val() || {};
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `نسخة-احتياطية-تجارة-الاسماك-${todayStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    localStorage.setItem(DB_BACKUP_KEY, todayStr);
+    if (manual && window.showToast) showToast('✅ تم تنزيل النسخة الاحتياطية إلى الهاتف');
+    updateDbBackupInfo();
+    return data;
+  } catch (e) {
+    if (window.showToast) showToast('❌ فشل تنزيل النسخة الاحتياطية: ' + e.message);
+  }
+};
+
+function updateDbBackupInfo() {
+  const el = document.getElementById('db-last-backup-info');
+  if (!el) return;
+  const last = localStorage.getItem(DB_BACKUP_KEY);
+  el.textContent = last ? `📅 آخر نسخة احتياطية تلقائية: ${last}` : '⚠️ لم يتم عمل نسخة احتياطية بعد';
+}
+
+// Auto daily backup: runs once per calendar day when the app is opened
+window.autoDailyBackupCheck = function() {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const last = localStorage.getItem(DB_BACKUP_KEY);
+  if (last === todayStr) return;
+  setTimeout(() => { downloadDbBackup(false); }, 2500);
+};
+
+window.openDbSettingsModal = async function() {
+  const old = document.getElementById('db-settings-modal');
+  if (old) old.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'db-settings-modal';
+  modal.innerHTML = `
+    <div class="modal-sheet" style="max-height:85vh">
+      <div class="modal-handle"></div>
+      <div class="modal-title">⚙️ إعدادات قاعدة البيانات</div>
+      <div id="db-stats-body" style="text-align:center;padding:30px 0"><span class="spinner"></span></div>
+    </div>`;
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  document.getElementById('modals-container').appendChild(modal);
+
+  try {
+    const snap = await get(ref(db, '/'));
+    const data = snap.val() || {};
+    const invoicesCount = Object.keys(data.invoices || {}).length;
+    const clientsCount = Object.keys(data.clients || {}).length;
+    const paymentsCount = Object.keys(data.payments || {}).length;
+    const sizeKb = Math.max(1, Math.round(new Blob([JSON.stringify(data)]).size / 1024));
+
+    document.getElementById('db-stats-body').innerHTML = `
+      <div class="db-stat-mini-grid">
+        <div class="db-stat-mini"><div class="n">${invoicesCount}</div><div class="l">🧾 الفواتير</div></div>
+        <div class="db-stat-mini"><div class="n">${clientsCount}</div><div class="l">👥 العملاء</div></div>
+        <div class="db-stat-mini"><div class="n">${paymentsCount}</div><div class="l">💳 المدفوعات</div></div>
+        <div class="db-stat-mini"><div class="n">${sizeKb}</div><div class="l">💾 حجم البيانات (KB)</div></div>
+      </div>
+      <div id="db-last-backup-info" style="font-size:11px;color:var(--text-secondary);text-align:center;margin-bottom:14px"></div>
+      <button class="btn" style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,var(--ocean-surface),var(--cyan-glow));color:#fff;border:none;padding:13px;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;cursor:pointer"
+        onclick="downloadDbBackup(true)">⬇️ تنزيل نسخة احتياطية الآن</button>
+      <div style="border-top:1px solid var(--glass-border);padding-top:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-primary)">📥 استيراد نسخة احتياطية</div>
+        <div style="font-size:11px;color:var(--danger);margin-bottom:10px;line-height:1.6">⚠️ استيراد ملف سيستبدل بيانات النظام الحالية بالكامل بعد التأكيد</div>
+        <input type="file" id="db-import-input" accept="application/json" style="display:none" onchange="handleDbImportFile(event)">
+        <button style="width:100%;background:transparent;border:1px solid var(--glass-border);color:var(--text-secondary);padding:13px;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;cursor:pointer"
+          onclick="document.getElementById('db-import-input').click()">📂 اختيار ملف الاستيراد (JSON)</button>
+      </div>
+    `;
+    updateDbBackupInfo();
+  } catch (e) {
+    document.getElementById('db-stats-body').innerHTML = `<div style="color:var(--danger)">حدث خطأ في تحميل بيانات قاعدة البيانات: ${e.message}</div>`;
+  }
+};
+
+window.handleDbImportFile = function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let parsed;
+    try {
+      parsed = JSON.parse(e.target.result);
+    } catch (err) {
+      showToast('❌ الملف المختار غير صالح (ليس JSON سليم)');
+      event.target.value = '';
+      return;
+    }
+    showConfirmModal({
+      icon: '📥', title: 'استيراد قاعدة البيانات',
+      msg: 'سيتم استبدال جميع بيانات الفواتير والعملاء والمدفوعات الحالية ببيانات الملف المستورد. هل تريد المتابعة؟',
+      confirmLabel: '📥 استيراد الآن',
+      confirmColor: 'linear-gradient(135deg,var(--ocean-surface),var(--danger))',
+      onConfirm: async () => {
+        try {
+          await set(ref(db, '/'), parsed);
+          showToast('✅ تم استيراد قاعدة البيانات بنجاح');
+          const modal = document.getElementById('db-settings-modal');
+          if (modal) modal.remove();
+        } catch (err) {
+          showToast('❌ فشل الاستيراد: ' + err.message);
+        }
+      }
+    });
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+};
+
+// ============================================================
 // CONFIRM MODAL
 // ============================================================
 function showConfirmModal({icon, title, msg, confirmLabel, confirmColor, onConfirm}) {
@@ -7259,6 +7399,7 @@ window.doLogin = function() {
 
   updateDate();
   setupListeners();
+  autoDailyBackupCheck();
 };
 
 // ============================================================

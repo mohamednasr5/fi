@@ -25,7 +25,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+  import { getDatabase, ref, set, push, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
   const firebaseConfig = {
     apiKey: "AIzaSyDTu6HtZTejCP1Qi-4nFqMJ9B5HwcopgWo",
     authDomain: "fish-230a0.firebaseapp.com",
@@ -40,7 +40,7 @@
   const db  = getDatabase(app);
   window.db=db; window.dbRef=ref; window.dbSet=set;
   window.dbPush=push; window.dbOnValue=onValue;
-  window.dbUpdate=update; window.dbRemove=remove;
+  window.dbUpdate=update; window.dbRemove=remove; window.dbGet=get;
   window.firebaseReady=true;
   document.dispatchEvent(new Event('firebaseReady'));
 </script>
@@ -238,6 +238,18 @@ body::before{content:'';position:fixed;inset:0;background:
 .inst-btn{background:linear-gradient(135deg,var(--teal),var(--cyan));color:var(--deep);border:none;border-radius:9px;padding:7px 12px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
 .inst-btn.hidden{display:none;}
 .logout-btn{background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.3);color:var(--coral);border-radius:9px;padding:7px 11px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.settings-gear-btn{background:rgba(0,180,216,.15);border:1px solid rgba(0,180,216,.3);color:var(--cyan);border-radius:9px;width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:transform .3s ease,background .3s ease;}
+.settings-gear-btn:active{transform:rotate(90deg) scale(.92);background:rgba(0,180,216,.28);}
+.db-modal-overlay{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;}
+.db-modal-sheet{background:linear-gradient(180deg,var(--ocean),var(--deep));border:1px solid var(--gb);border-radius:24px 24px 0 0;padding:20px 20px max(20px,env(safe-area-inset-bottom));width:100%;max-width:520px;max-height:85vh;overflow-y:auto;}
+.db-modal-handle{width:40px;height:4px;background:var(--gb);border-radius:2px;margin:0 auto 16px;}
+.db-modal-title{font-size:18px;font-weight:900;color:var(--gold);text-align:center;margin-bottom:16px;}
+.db-stat-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.db-stat-mini{background:var(--glass);border:1px solid var(--gb);border-radius:14px;padding:12px;text-align:center;}
+.db-stat-mini .n{font-size:20px;font-weight:900;color:var(--gold);}
+.db-stat-mini .l{font-size:10px;color:var(--muted);margin-top:2px;}
+.db-spinner{display:inline-block;width:22px;height:22px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:dbspin .6s linear infinite;}
+@keyframes dbspin{to{transform:rotate(360deg);}}
 .nav{display:flex;gap:5px;margin-top:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
 .nav::-webkit-scrollbar{display:none;}
 .nb{flex-shrink:0;background:transparent;border:1px solid var(--gb);border-radius:18px;padding:6px 14px;font-family:'Cairo',sans-serif;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .25s;white-space:nowrap;}
@@ -1000,6 +1012,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       </div>
       <div class="hdr-actions">
         <button class="inst-btn hidden" id="installBtn" onclick="installApp()">📲 تثبيت</button>
+        <button class="settings-gear-btn" onclick="openDbSettingsModal()" title="إعدادات قاعدة البيانات" aria-label="إعدادات قاعدة البيانات">⚙️</button>
         <button class="logout-btn" onclick="doLogout()">🚪 خروج</button>
       </div>
     </div>
@@ -1481,6 +1494,7 @@ function closeWelcome(){
     document.getElementById('hdr-username').textContent='مدير — '+currentUser.name;
   }
   init();
+  autoDailyBackupCheck();
 }
 
 function doLogout(){
@@ -1490,6 +1504,139 @@ function doLogout(){
   document.getElementById('login-screen').style.display='flex'; document.body.classList.remove('viewer-mode');
   document.getElementById('viewer-badge').classList.remove('show');
   Object.assign(state,{sectors:{},store:{},logs:{}});
+}
+
+// ════════════════════════════════════════════════════════════════
+// ⚙️ DATABASE SETTINGS / DAILY AUTO-BACKUP / IMPORT
+// ════════════════════════════════════════════════════════════════
+const DB_BACKUP_KEY = 'fishFarmLastBackupDate';
+
+async function downloadDbBackup(manual){
+  try{
+    const snap = await window.dbGet(window.dbRef(window.db, '/'));
+    const data = snap.val() || {};
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const a = document.createElement('a');
+    a.href = url; a.download = `نسخة-احتياطية-مزرعة-السمك-${todayStr}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    localStorage.setItem(DB_BACKUP_KEY, todayStr);
+    if(manual) toast('✅ تم تنزيل النسخة الاحتياطية إلى الهاتف','ok');
+    updateDbBackupInfo();
+    return data;
+  }catch(e){
+    if(manual) toast('❌ فشل تنزيل النسخة الاحتياطية','err');
+  }
+}
+
+function updateDbBackupInfo(){
+  const el = document.getElementById('db-last-backup-info');
+  if(!el) return;
+  const last = localStorage.getItem(DB_BACKUP_KEY);
+  el.textContent = last ? `📅 آخر نسخة احتياطية تلقائية: ${last}` : '⚠️ لم يتم عمل نسخة احتياطية بعد';
+}
+
+// Runs once per calendar day, right after successful login/init
+function autoDailyBackupCheck(){
+  const todayStr = new Date().toISOString().split('T')[0];
+  const last = localStorage.getItem(DB_BACKUP_KEY);
+  if(last === todayStr) return;
+  setTimeout(()=>{ downloadDbBackup(false); }, 2500);
+}
+
+async function openDbSettingsModal(){
+  const old = document.getElementById('db-settings-modal');
+  if(old) old.remove();
+  const modal = document.createElement('div');
+  modal.className = 'db-modal-overlay';
+  modal.id = 'db-settings-modal';
+  modal.innerHTML = `
+    <div class="db-modal-sheet">
+      <div class="db-modal-handle"></div>
+      <div class="db-modal-title">⚙️ إعدادات قاعدة البيانات</div>
+      <div id="db-stats-body" style="text-align:center;padding:30px 0"><span class="db-spinner"></span></div>
+    </div>`;
+  modal.onclick = (e)=>{ if(e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
+
+  try{
+    const snap = await window.dbGet(window.dbRef(window.db, '/'));
+    const data = snap.val() || {};
+    const sectorsObj = data.sectors || {};
+    const sectorsCount = Object.keys(sectorsObj).length;
+    let fishBatchesCount = 0;
+    Object.values(sectorsObj).forEach(sec => { fishBatchesCount += Object.keys(sec?.fish || {}).length; });
+    const storeCount = Object.keys(data.store || {}).length;
+    const logsCount = Object.keys(data.logs || {}).length;
+    const sizeKb = Math.max(1, Math.round(new Blob([JSON.stringify(data)]).size/1024));
+
+    document.getElementById('db-stats-body').innerHTML = `
+      <div class="db-stat-mini-grid">
+        <div class="db-stat-mini"><div class="n">${sectorsCount}</div><div class="l">🌊 القطاعات</div></div>
+        <div class="db-stat-mini"><div class="n">${fishBatchesCount}</div><div class="l">🐟 دفعات السمك</div></div>
+        <div class="db-stat-mini"><div class="n">${storeCount}</div><div class="l">🏭 أصناف المخزن</div></div>
+        <div class="db-stat-mini"><div class="n">${logsCount}</div><div class="l">📋 سجلات الحركة</div></div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--muted);margin-bottom:14px">💾 حجم البيانات: ${sizeKb} KB</div>
+      <div id="db-last-backup-info" style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:14px"></div>
+      <button style="width:100%;margin-bottom:14px;background:linear-gradient(135deg,var(--ocean),var(--teal));color:#fff;border:none;padding:13px;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;cursor:pointer"
+        onclick="downloadDbBackup(true)">⬇️ تنزيل نسخة احتياطية الآن</button>
+      <div style="border-top:1px solid var(--gb);padding-top:14px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text)">📥 استيراد نسخة احتياطية</div>
+        <div style="font-size:11px;color:var(--coral);margin-bottom:10px;line-height:1.6">⚠️ استيراد ملف سيستبدل بيانات المزرعة الحالية بالكامل بعد التأكيد</div>
+        <input type="file" id="db-import-input" accept="application/json" style="display:none" onchange="handleDbImportFile(event)">
+        <button style="width:100%;background:transparent;border:1px solid var(--gb);color:var(--muted);padding:13px;border-radius:12px;font-family:'Cairo',sans-serif;font-size:14px;cursor:pointer"
+          onclick="document.getElementById('db-import-input').click()">📂 اختيار ملف الاستيراد (JSON)</button>
+      </div>
+    `;
+    updateDbBackupInfo();
+  }catch(e){
+    document.getElementById('db-stats-body').innerHTML = `<div style="color:var(--coral)">حدث خطأ في تحميل بيانات قاعدة البيانات: ${e.message}</div>`;
+  }
+}
+
+function handleDbImportFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    let parsed;
+    try{ parsed = JSON.parse(e.target.result); }
+    catch(err){ toast('❌ الملف المختار غير صالح (ليس JSON سليم)','err'); event.target.value=''; return; }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'db-modal-overlay';
+    overlay.innerHTML = `
+      <div class="db-modal-sheet" style="text-align:center">
+        <div class="db-modal-handle"></div>
+        <div style="font-size:44px;margin:8px 0">📥</div>
+        <div style="font-size:17px;font-weight:900;color:var(--text);margin-bottom:8px">استيراد قاعدة البيانات</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">سيتم استبدال جميع بيانات القطاعات والمخزن والسجلات الحالية ببيانات الملف المستورد. هل تريد المتابعة؟</div>
+        <div style="display:flex;gap:10px">
+          <button id="db-import-cancel" style="flex:1;padding:13px;border-radius:12px;border:1px solid var(--gb);background:transparent;color:var(--muted);font-family:'Cairo',sans-serif;font-size:14px;cursor:pointer">إلغاء</button>
+          <button id="db-import-confirm" style="flex:2;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--ocean),var(--coral));color:#fff;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;cursor:pointer">📥 استيراد الآن</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.onclick = (e)=>{ if(e.target===overlay) overlay.remove(); };
+    document.getElementById('db-import-cancel').onclick = ()=> overlay.remove();
+    document.getElementById('db-import-confirm').onclick = async ()=>{
+      try{
+        await window.dbSet(window.dbRef(window.db, '/'), parsed);
+        toast('✅ تم استيراد قاعدة البيانات بنجاح','ok');
+        overlay.remove();
+        const modal = document.getElementById('db-settings-modal');
+        if(modal) modal.remove();
+      }catch(err){
+        toast('❌ فشل الاستيراد: ' + err.message, 'err');
+      }
+    };
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 const FISH_ICO = {بوري:'🐟',طوبار:'🐠',شبار:'🐡',بياض:'🫧'};
