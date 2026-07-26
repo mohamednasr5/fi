@@ -1123,8 +1123,9 @@
         <div class="form-group">
           <label class="form-label">🤝 عمولة التاجر % (اختياري)</label>
           <div style="position:relative;display:flex;align-items:center">
-            <input type="number" id="inv-commission" class="form-input" placeholder="0" min="0" max="100" step="0.5"
-              oninput="updateInvoiceSummary()"
+            <input type="number" id="inv-commission" class="form-input" placeholder="0" min="0" max="100" step="1" inputmode="numeric"
+              onkeydown="blockDecimalKey(event)"
+              oninput="sanitizeIntInput(this);updateInvoiceSummary()"
               style="padding-left:50px;font-size:18px;font-weight:700;text-align:center">
             <span style="position:absolute;left:14px;font-size:22px;font-weight:900;color:var(--gold);pointer-events:none">%</span>
           </div>
@@ -1791,20 +1792,22 @@ function buildFishRowHTML(item) {
           <label id="fish-qty-lbl-${id}">الكمية (${uDef.label})</label>
           <input type="number" id="fish-qty-${id}"
             value="${item.qty > 0 ? item.qty : ''}"
-            placeholder="0" min="0" step="0.5" inputmode="decimal"
-            oninput="onFishInput(${id})">
+            placeholder="0" min="0" step="1" inputmode="numeric"
+            onkeydown="blockDecimalKey(event)"
+            oninput="sanitizeIntInput(this);onFishInput(${id})">
         </div>
         <div class="fish-input-group">
           <label id="fish-price-lbl-${id}">سعر ال${uDef.label}</label>
           <input type="number" id="fish-price-${id}"
             value="${item.price > 0 ? item.price : ''}"
-            placeholder="0" min="0" inputmode="decimal"
-            oninput="onFishInput(${id})">
+            placeholder="0" min="0" step="1" inputmode="numeric"
+            onkeydown="blockDecimalKey(event)"
+            oninput="sanitizeIntInput(this);onFishInput(${id})">
         </div>
         <div class="fish-input-group">
           <label>الإجمالي</label>
           <input type="number" id="fish-subtotal-${id}"
-            value="${item.subtotal > 0 ? item.subtotal.toFixed(2) : ''}"
+            value="${item.subtotal > 0 ? Math.round(item.subtotal) : ''}"
             placeholder="0" readonly class="readonly-subtotal">
         </div>
       </div>
@@ -1815,14 +1818,14 @@ function buildFishRowHTML(item) {
 window.onFishInput = function(id) {
   const item = window.appState.fishItems.find(x => x.id === id);
   if (!item) return;
-  const qty = parseFloat(document.getElementById('fish-qty-' + id)?.value) || 0;
-  const price = parseFloat(document.getElementById('fish-price-' + id)?.value) || 0;
+  const qty = intVal(document.getElementById('fish-qty-' + id)?.value);
+  const price = intVal(document.getElementById('fish-price-' + id)?.value);
   const uDef = UNITS[item.unit] || UNITS.kg;
   item.qty = qty; item.price = price;
   item.kg = qty * uDef.kgFactor;
-  item.subtotal = qty * price;
+  item.subtotal = Math.round(qty * price);
   const subEl = document.getElementById('fish-subtotal-' + id);
-  if (subEl) subEl.value = item.subtotal > 0 ? item.subtotal.toFixed(2) : '';
+  if (subEl) subEl.value = item.subtotal > 0 ? item.subtotal : '';
   const totalEl = document.getElementById('fish-total-' + id);
   if (totalEl) totalEl.textContent = formatNum(item.subtotal) + ' ج.م';
   const infoEl = document.getElementById('fish-info-' + id);
@@ -1861,7 +1864,7 @@ window.addExpenseRow = function() {
   row.className = 'expense-row'; row.id = 'exp-row-' + id;
   row.innerHTML = `
     <input type="text" class="expense-desc" id="exp-desc-${id}" placeholder="وصف المصروف">
-    <input type="number" class="expense-amt" id="exp-amt-${id}" placeholder="0" min="0" inputmode="decimal">
+    <input type="number" class="expense-amt" id="exp-amt-${id}" placeholder="0" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)">
     <button class="expense-remove-btn" onclick="removeExpenseRow(${id})">✕</button>
   `;
   container.appendChild(row);
@@ -1879,16 +1882,18 @@ window.addExpenseRow = function() {
   
   if (amtInput) {
     amtInput.addEventListener('input', function() {
+      sanitizeIntInput(this);
       const exp = window.appState.expenses.find(e => e.id === id);
-      if (exp) exp.amount = parseFloat(this.value) || 0;
+      if (exp) exp.amount = intVal(this.value);
       // Force immediate update
       console.log('[DEBUG] Expense changed:', id, 'amount:', exp.amount);
       updateInvoiceSummary();
     });
     // Also listen for change event (for some mobile browsers)
     amtInput.addEventListener('change', function() {
+      sanitizeIntInput(this);
       const exp = window.appState.expenses.find(e => e.id === id);
-      if (exp) exp.amount = parseFloat(this.value) || 0;
+      if (exp) exp.amount = intVal(this.value);
       console.log('[DEBUG] Expense change event:', id, 'amount:', exp.amount);
       updateInvoiceSummary();
     });
@@ -1921,7 +1926,7 @@ window.addAdditionRow = function() {
   row.innerHTML = `
     <input type="text" class="addition-name" id="add-name-${id}" placeholder="اسم المبلغ">
     <input type="text" class="addition-desc" id="add-desc-${id}" placeholder="وصف/تفاصيل">
-    <input type="number" class="addition-amt" id="add-amt-${id}" placeholder="0" min="0" inputmode="decimal">
+    <input type="number" class="addition-amt" id="add-amt-${id}" placeholder="0" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)">
     <button class="addition-remove-btn" onclick="removeAdditionRow(${id})">✕</button>
   `;
   container.appendChild(row);
@@ -1947,16 +1952,18 @@ window.addAdditionRow = function() {
   
   if (amtInput) {
     amtInput.addEventListener('input', function() {
+      sanitizeIntInput(this);
       const add = window.appState.additions.find(a => a.id === id);
-      if (add) add.amount = parseFloat(this.value) || 0;
+      if (add) add.amount = intVal(this.value);
       // Force immediate update
       console.log('[DEBUG] Addition changed:', id, 'amount:', add.amount);
       updateInvoiceSummary();
     });
     // Also listen for change event (for some mobile browsers)
     amtInput.addEventListener('change', function() {
+      sanitizeIntInput(this);
       const add = window.appState.additions.find(a => a.id === id);
-      if (add) add.amount = parseFloat(this.value) || 0;
+      if (add) add.amount = intVal(this.value);
       console.log('[DEBUG] Addition change event:', id, 'amount:', add.amount);
       updateInvoiceSummary();
     });
@@ -2007,8 +2014,11 @@ function updateInvoiceSummary(forceUpdate) {
     addTotal = window.appState.additions.reduce((s, a) => s + (parseFloat(a.amount) || 0), 0);
   }
   
-  const commPct = parseFloat(document.getElementById('inv-commission')?.value) || 0;
-  const commAmt = (fishGross * commPct) / 100;
+  const commPct = intVal(document.getElementById('inv-commission')?.value);
+  fishGross = Math.round(fishGross);
+  expTotal = Math.round(expTotal);
+  addTotal = Math.round(addTotal);
+  const commAmt = Math.round((fishGross * commPct) / 100);
   const net = fishGross - expTotal + addTotal - commAmt;
 
   // Debug: Log calculations
@@ -2108,19 +2118,21 @@ window.saveInvoice = async function() {
   }
   if (items.length === 0) return showToast('❌ يرجى إدخال كميات وأسعار');
 
+  fishTotal = Math.round(fishTotal);
+
   const expensesList = window.appState.expenses
     .filter(e => e.amount > 0 || e.desc)
-    .map(e => ({ desc: e.desc || 'مصروف', amount: e.amount || 0 }));
+    .map(e => ({ desc: e.desc || 'مصروف', amount: Math.round(e.amount || 0) }));
   const expTotal = expensesList.reduce((s, e) => s + e.amount, 0);
 
   const additionsList = window.appState.additions
     .filter(a => a.amount > 0 || a.name || a.desc)
-    .map(a => ({ name: a.name || '', desc: a.desc || '', amount: a.amount || 0 }));
+    .map(a => ({ name: a.name || '', desc: a.desc || '', amount: Math.round(a.amount || 0) }));
   const addTotal = additionsList.reduce((s, a) => s + a.amount, 0);
 
-  const commissionPct = parseFloat(document.getElementById('inv-commission')?.value) || 0;
-  const commissionAmt = (fishTotal * commissionPct) / 100;
-  const netTotal = Math.max(fishTotal - expTotal + addTotal - commissionAmt, 0);
+  const commissionPct = intVal(document.getElementById('inv-commission')?.value);
+  const commissionAmt = Math.round((fishTotal * commissionPct) / 100);
+  const netTotal = Math.max(Math.round(fishTotal - expTotal + addTotal - commissionAmt), 0);
 
   const btn = document.getElementById('save-invoice-btn');
   btn.innerHTML = '<span class="spinner"></span> جاري الحفظ...'; btn.disabled = true;
@@ -5339,6 +5351,24 @@ window.showToast = function(msg) {
   setTimeout(() => toast.remove(), 3000);
 };
 function formatNum(n) { return Math.round(n || 0).toLocaleString('ar-EG'); }
+// أعداد صحيحة فقط في كل مكان - لا كسور
+function intVal(v) { return Math.round(parseFloat(v) || 0); }
+window.intVal = intVal;
+// منع كتابة الفاصلة العشرية أو الأس في حقول الأرقام (أعداد صحيحة فقط)
+window.blockDecimalKey = function(e) {
+  if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+    e.preventDefault();
+  }
+};
+// تصحيح فوري لأي قيمة عشرية تدخل حقل رقمي (مثل اللصق) لتصبح عدد صحيح
+window.sanitizeIntInput = function(el) {
+  if (!el) return 0;
+  const rounded = intVal(el.value);
+  if (el.value !== '' && String(rounded) !== el.value) {
+    el.value = rounded === 0 && el.value.trim() === '' ? '' : rounded;
+  }
+  return rounded;
+};
 
 // ============================================================
 // DATABASE SETTINGS / BACKUP / IMPORT (⚙️)
@@ -5595,7 +5625,7 @@ window.editInvoiceModal = function(invoiceId) {
       </div>
       <div class="form-group">
         <label class="form-label">🤝 عمولة %</label>
-        <input type="number" id="ei-commission" class="form-input" value="${inv.commissionPct||0}" min="0" max="100" step="0.5" oninput="calcEditInvoice()">
+        <input type="number" id="ei-commission" class="form-input" value="${inv.commissionPct||0}" min="0" max="100" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)" oninput="sanitizeIntInput(this);calcEditInvoice()">
       </div>
       <div style="background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;padding:12px;margin-bottom:12px">
         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;font-weight:700">📦 الأصناف</div>
@@ -5618,11 +5648,11 @@ window.editInvoiceModal = function(invoiceId) {
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
               <div>
                 <label id="ei-qty-lbl-${idx}" style="font-size:10px;color:var(--text-secondary);display:block;margin-bottom:3px">${UNITS[unit]?.label||'كيلو'}</label>
-                <input type="number" id="ei-kg-${idx}" class="form-input" value="${qty}" min="0" step="0.5" oninput="calcEditInvoice()" style="padding:8px;text-align:center">
+                <input type="number" id="ei-kg-${idx}" class="form-input" value="${qty}" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)" oninput="sanitizeIntInput(this);calcEditInvoice()" style="padding:8px;text-align:center">
               </div>
               <div>
                 <label id="ei-prc-lbl-${idx}" style="font-size:10px;color:var(--text-secondary);display:block;margin-bottom:3px">سعر ال${UNITS[unit]?.label||'كيلو'}</label>
-                <input type="number" id="ei-price-${idx}" class="form-input" value="${prc}" min="0" oninput="calcEditInvoice()" style="padding:8px;text-align:center">
+                <input type="number" id="ei-price-${idx}" class="form-input" value="${prc}" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)" oninput="sanitizeIntInput(this);calcEditInvoice()" style="padding:8px;text-align:center">
               </div>
             </div>
           </div>`;
@@ -5637,9 +5667,9 @@ window.editInvoiceModal = function(invoiceId) {
             <input type="text" id="ei-exp-desc-${exp._localId}" placeholder="وصف المصروف" value="${exp.desc||''}"
               style="flex:1;min-width:0;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--text-primary);font-size:11px"
               oninput="updateEditExpense(${exp._localId})">
-            <input type="number" id="ei-exp-amt-${exp._localId}" placeholder="0" min="0" value="${exp.amount||0}"
+            <input type="number" id="ei-exp-amt-${exp._localId}" placeholder="0" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)" value="${exp.amount||0}"
               style="width:80px;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--danger);font-size:11px;text-align:center"
-              oninput="updateEditExpense(${exp._localId});calcEditInvoice()">
+              oninput="sanitizeIntInput(this);updateEditExpense(${exp._localId});calcEditInvoice()">
             <button onclick="removeEditExpense(${exp._localId})" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(255,71,87,0.3);background:rgba(255,71,87,0.1);color:var(--danger);font-size:12px;cursor:pointer;font-weight:700">✕</button>
           </div>`).join('')}
         </div>
@@ -5657,9 +5687,9 @@ window.editInvoiceModal = function(invoiceId) {
             <input type="text" id="ei-add-desc-${add._localId}" placeholder="وصف/تفاصيل" value="${add.desc||''}"
               style="flex:1;min-width:70px;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--text-primary);font-size:11px"
               oninput="updateEditAddition(${add._localId})">
-            <input type="number" id="ei-add-amt-${add._localId}" placeholder="0" min="0" value="${add.amount||0}"
+            <input type="number" id="ei-add-amt-${add._localId}" placeholder="0" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)" value="${add.amount||0}"
               style="width:75px;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--emerald);font-size:11px;text-align:center"
-              oninput="updateEditAddition(${add._localId});calcEditInvoice()">
+              oninput="sanitizeIntInput(this);updateEditAddition(${add._localId});calcEditInvoice()">
             <button onclick="removeEditAddition(${add._localId})" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.1);color:var(--emerald);font-size:12px;cursor:pointer;font-weight:700">✕</button>
           </div>`).join('')}
         </div>
@@ -5674,9 +5704,9 @@ window.editInvoiceModal = function(invoiceId) {
           <div style="display:flex;align-items:center;gap:6px">
             <button type="button" onclick="resetEditGrossOverride()" title="إعادة الحساب تلقائياً من الأصناف"
               style="display:${window._eiOverrides.gross?'inline-flex':'none'};align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.08);color:var(--gold);font-size:13px;cursor:pointer" id="ei-gross-reset-btn">↺</button>
-            <input type="number" id="ei-gross-input" value="${fishTotal}" min="0" step="0.5"
+            <input type="number" id="ei-gross-input" value="${Math.round(fishTotal)}" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)"
               style="width:130px;padding:7px 10px;border-radius:8px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.08);color:var(--text-primary);font-size:14px;font-weight:800;text-align:left;font-family:'Cairo',sans-serif;direction:ltr"
-              oninput="markEditGrossManual();calcEditInvoice()" title="يمكنك تعديل هذا الرقم يدوياً">
+              oninput="sanitizeIntInput(this);markEditGrossManual();calcEditInvoice()" title="يمكنك تعديل هذا الرقم يدوياً">
           </div>
         </div>
         <div id="ei-exp-row" style="display:${(inv.expTotal||0)>0?'flex':'none'};justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -5699,9 +5729,9 @@ window.editInvoiceModal = function(invoiceId) {
         <div id="ei-comm-row" style="display:${inv.commissionPct>0 || true?'flex':'none'};justify-content:space-between;align-items:center;margin-bottom:8px">
           <label style="font-size:12px;color:var(--warning);cursor:pointer" for="ei-commission-manual">🤝 العمولة (%)</label>
           <div style="display:flex;align-items:center;gap:8px">
-            <input type="number" id="ei-commission-manual" value="${inv.commissionPct||0}" min="0" max="100" step="0.5"
+            <input type="number" id="ei-commission-manual" value="${inv.commissionPct||0}" min="0" max="100" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)"
               style="width:70px;padding:6px 8px;border-radius:7px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.08);color:var(--warning);font-size:13px;font-weight:700;text-align:center;font-family:'Cairo',sans-serif;direction:ltr"
-              oninput="syncCommissionFromManual();calcEditInvoice()" title="يمكنك تعديل النسبة يدوياً">
+              oninput="sanitizeIntInput(this);syncCommissionFromManual();calcEditInvoice()" title="يمكنك تعديل النسبة يدوياً">
             <span id="ei-comm-val" style="font-size:12px;font-weight:700;color:var(--warning)">- ${formatNum(inv.commissionAmt||0)} ج.م</span>
           </div>
         </div>
@@ -5714,9 +5744,9 @@ window.editInvoiceModal = function(invoiceId) {
           <div style="display:flex;align-items:center;gap:6px">
             <button type="button" onclick="resetEditNetOverride()" title="إعادة الحساب تلقائياً"
               style="display:${window._eiOverrides.net?'inline-flex':'none'};align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.08);color:var(--gold);font-size:13px;cursor:pointer" id="ei-net-reset-btn">↺</button>
-            <input type="number" id="ei-net-input" value="${inv.total}" min="0" step="0.5"
+            <input type="number" id="ei-net-input" value="${Math.round(inv.total)}" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)"
               style="width:140px;padding:9px 12px;border-radius:9px;border:2px solid rgba(255,215,0,0.5);background:rgba(255,215,0,0.12);color:var(--gold);font-size:18px;font-weight:900;text-align:left;font-family:'Cairo',sans-serif;direction:ltr"
-              oninput="markEditNetManual();calcEditInvoice()"
+              oninput="sanitizeIntInput(this);markEditNetManual();calcEditInvoice()"
               title="يمكنك تعديل هذا الرقم يدوياً">
           </div>
         </div>
@@ -5746,15 +5776,16 @@ window.calcEditInvoice = function() {
   // احسب إجمالي الأصناف دائماً من حقول الأصناف
   let itemsGross = 0;
   (window._editItems || []).forEach((item, idx) => {
-    const kg = parseFloat(document.getElementById('ei-kg-' + idx)?.value) || 0;
-    const price = parseFloat(document.getElementById('ei-price-' + idx)?.value) || 0;
+    const kg = intVal(document.getElementById('ei-kg-' + idx)?.value);
+    const price = intVal(document.getElementById('ei-price-' + idx)?.value);
     itemsGross += kg * price;
   });
+  itemsGross = Math.round(itemsGross);
 
   let newFishGross;
   if (window._eiOverrides.gross) {
     // المستخدم عدّل هذا الرقم يدوياً - نحترم قيمته
-    newFishGross = grossInput ? (parseFloat(grossInput.value) || 0) : itemsGross;
+    newFishGross = grossInput ? intVal(grossInput.value) : itemsGross;
   } else {
     // حساب تلقائي من الأصناف
     newFishGross = itemsGross;
@@ -5764,21 +5795,21 @@ window.calcEditInvoice = function() {
   // حساب إجمالي المصاريف المخصومة
   let expTotal = 0;
   (window._editExpenses || []).forEach(exp => {
-    expTotal += parseFloat(exp.amount) || 0;
+    expTotal += intVal(exp.amount);
   });
   // حساب إجمالي المبالغ المضافة
   let addTotal = 0;
   (window._editAdditions || []).forEach(add => {
-    addTotal += parseFloat(add.amount) || 0;
+    addTotal += intVal(add.amount);
   });
 
   // استخدام حقل العمولة اليدوي
   const commManualEl = document.getElementById('ei-commission-manual');
-  const commPct = commManualEl ? (parseFloat(commManualEl.value) || 0) : (parseFloat(document.getElementById('ei-commission')?.value) || 0);
-  const commAmt = (newFishGross * commPct) / 100;
+  const commPct = commManualEl ? intVal(commManualEl.value) : intVal(document.getElementById('ei-commission')?.value);
+  const commAmt = Math.round((newFishGross * commPct) / 100);
 
   // حساب الصافي تلقائياً في كل مرة
-  const computedNet = Math.max(newFishGross - expTotal + addTotal - commAmt, 0);
+  const computedNet = Math.max(Math.round(newFishGross - expTotal + addTotal - commAmt), 0);
 
   // تحديث عناصر واجهة المستخدم
   const expRow = document.getElementById('ei-exp-row');
@@ -5802,7 +5833,7 @@ window.calcEditInvoice = function() {
     if (!window._eiOverrides.net) {
       netInput.value = computedNet;
     }
-    const shownNet = parseFloat(netInput.value) || 0;
+    const shownNet = intVal(netInput.value);
     netLabel.textContent = formatNum(Math.max(shownNet, 0)) + ' ج.م';
   }
 };
@@ -5868,7 +5899,7 @@ window.saveEditInvoice = async function(invoiceId) {
   
   // استخدام حقل العمولة اليدوي إن وجد، وإلا استخدم الأصلي
   const commManualEl = document.getElementById('ei-commission-manual');
-  const newCommPct = commManualEl ? (parseFloat(commManualEl.value) || 0) : (parseFloat(document.getElementById('ei-commission')?.value) || 0);
+  const newCommPct = commManualEl ? intVal(commManualEl.value) : intVal(document.getElementById('ei-commission')?.value);
   
   const newDateISO = document.getElementById('ei-date')?.value || getTodayISO();
   if (!newClientName) return showToast('❌ اسم العميل مطلوب');
@@ -5876,11 +5907,11 @@ window.saveEditInvoice = async function(invoiceId) {
   const newDateStr = new Date(newDateISO + 'T12:00:00').toLocaleDateString('en-GB'); 
   const newItems = (window._editItems || []).map((item, idx) => {
     const unit = document.getElementById('ei-unit-' + idx)?.value || item.unit || 'kg';
-    const qty = parseFloat(document.getElementById('ei-kg-' + idx)?.value) || 0;
-    const priceRaw = parseFloat(document.getElementById('ei-price-' + idx)?.value) || 0;
+    const qty = intVal(document.getElementById('ei-kg-' + idx)?.value);
+    const priceRaw = intVal(document.getElementById('ei-price-' + idx)?.value);
     const uDef = UNITS[unit] || UNITS.kg;
     const kgEquiv = qty * uDef.kgFactor;
-    return { ...item, unit, unitLabel: uDef.label, qty, kg: kgEquiv, pricePerUnit: priceRaw, pricePerKg: +(priceRaw/uDef.kgFactor).toFixed(4), subtotal: qty * priceRaw };
+    return { ...item, unit, unitLabel: uDef.label, qty, kg: kgEquiv, pricePerUnit: priceRaw, pricePerKg: +(priceRaw/uDef.kgFactor).toFixed(4), subtotal: Math.round(qty * priceRaw) };
   });
   // تأكيد آخر تحديث للحسابات قبل الحفظ (يتأكد أن الحقول متزامنة تماماً)
   calcEditInvoice();
@@ -5888,24 +5919,24 @@ window.saveEditInvoice = async function(invoiceId) {
   // استخدام إجمالي الأصناف الحالي في الحقل (يُحسب تلقائياً أو تم تعديله يدوياً)
   const grossInputEl = document.getElementById('ei-gross-input');
   const calcFishGross = newItems.reduce((s, i) => s + i.subtotal, 0);
-  const newFishGross = grossInputEl ? (parseFloat(grossInputEl.value) || 0) : calcFishGross;
+  const newFishGross = grossInputEl ? intVal(grossInputEl.value) : Math.round(calcFishGross);
   
   // تجهيز المصاريف المخصومة
   const newExpenses = (window._editExpenses || [])
     .filter(e => e.amount > 0 || e.desc)
-    .map(e => ({ desc: e.desc || 'مصروف', amount: e.amount || 0 }));
+    .map(e => ({ desc: e.desc || 'مصروف', amount: Math.round(e.amount || 0) }));
   const expTotal = newExpenses.reduce((s, e) => s + e.amount, 0);
   // تجهيز المبالغ المضافة
   const newAdditions = (window._editAdditions || [])
     .filter(a => a.amount > 0 || a.name || a.desc)
-    .map(a => ({ name: a.name || '', desc: a.desc || '', amount: a.amount || 0 }));
+    .map(a => ({ name: a.name || '', desc: a.desc || '', amount: Math.round(a.amount || 0) }));
   const addTotal = newAdditions.reduce((s, a) => s + a.amount, 0);
-  const newCommAmt = (newFishGross * newCommPct) / 100;
+  const newCommAmt = Math.round((newFishGross * newCommPct) / 100);
   
   // استخدام القيمة الحالية لحقل الصافي (متزامنة تلقائياً أو معدّلة يدوياً)
   const netInputEl = document.getElementById('ei-net-input');
-  const calcNet = Math.max(newFishGross - expTotal + addTotal - newCommAmt, 0);
-  const newNet = netInputEl ? Math.max(parseFloat(netInputEl.value) || 0, 0) : calcNet;
+  const calcNet = Math.max(Math.round(newFishGross - expTotal + addTotal - newCommAmt), 0);
+  const newNet = netInputEl ? Math.max(intVal(netInputEl.value), 0) : calcNet;
   
   const diff = newNet - inv.total;
   try {
@@ -5971,9 +6002,9 @@ window.addEditExpenseRow = function() {
     <input type="text" id="ei-exp-desc-${id}" placeholder="وصف المصروف"
       style="flex:1;min-width:0;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--text-primary);font-size:11px"
       oninput="updateEditExpense(${id})">
-    <input type="number" id="ei-exp-amt-${id}" placeholder="0" min="0"
+    <input type="number" id="ei-exp-amt-${id}" placeholder="0" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)"
       style="width:80px;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--danger);font-size:11px;text-align:center"
-      oninput="updateEditExpense(${id});calcEditInvoice()">
+      oninput="sanitizeIntInput(this);updateEditExpense(${id});calcEditInvoice()">
     <button onclick="removeEditExpense(${id})" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(255,71,87,0.3);background:rgba(255,71,87,0.1);color:var(--danger);font-size:12px;cursor:pointer;font-weight:700">✕</button>
   `;
   container.appendChild(row);
@@ -6009,7 +6040,7 @@ window.updateEditExpense = function(id) {
   const exp = window._editExpenses.find(e => e._localId === id);
   if (!exp) return;
   exp.desc = document.getElementById('ei-exp-desc-' + id)?.value || '';
-  exp.amount = parseFloat(document.getElementById('ei-exp-amt-' + id)?.value) || 0;
+  exp.amount = intVal(document.getElementById('ei-exp-amt-' + id)?.value);
 };
 
 // إضافة صف مبلغ مالي جديد في نافذة التعديل
@@ -6028,9 +6059,9 @@ window.addEditAdditionRow = function() {
     <input type="text" id="ei-add-desc-${id}" placeholder="وصف/تفاصيل"
       style="flex:1;min-width:70px;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--text-primary);font-size:11px"
       oninput="updateEditAddition(${id})">
-    <input type="number" id="ei-add-amt-${id}" placeholder="0" min="0"
+    <input type="number" id="ei-add-amt-${id}" placeholder="0" min="0" step="1" inputmode="numeric" onkeydown="blockDecimalKey(event)"
       style="width:75px;padding:7px 9px;border-radius:7px;border:1px solid var(--glass-border);background:rgba(255,255,255,0.05);color:var(--emerald);font-size:11px;text-align:center"
-      oninput="updateEditAddition(${id});calcEditInvoice()">
+      oninput="sanitizeIntInput(this);updateEditAddition(${id});calcEditInvoice()">
     <button onclick="removeEditAddition(${id})" style="padding:5px 8px;border-radius:6px;border:1px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.1);color:var(--emerald);font-size:12px;cursor:pointer;font-weight:700">✕</button>
   `;
   container.appendChild(row);
@@ -6067,7 +6098,7 @@ window.updateEditAddition = function(id) {
   if (!add) return;
   add.name = document.getElementById('ei-add-name-' + id)?.value || '';
   add.desc = document.getElementById('ei-add-desc-' + id)?.value || '';
-  add.amount = parseFloat(document.getElementById('ei-add-amt-' + id)?.value) || 0;
+  add.amount = intVal(document.getElementById('ei-add-amt-' + id)?.value);
 };
 
 // ============================================================
