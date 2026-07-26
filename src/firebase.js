@@ -56,7 +56,23 @@ export async function readDatabase(env, databaseId) {
 
     }
 
-    return await response.json();
+    // قراءة النص أولاً
+    const text = await response.text();
+    
+    // التحقق من أن النص ليس فارغاً
+    if (!text || text.trim() === '' || text.trim() === 'null') {
+        console.log(`Database ${databaseId} is empty, returning empty object`);
+        return {};
+    }
+
+    try {
+        // محاولة تحويل JSON
+        return JSON.parse(text);
+    } catch (parseError) {
+        console.error(`JSON parse error for ${databaseId}:`, parseError.message);
+        console.error(`Response text:`, text.substring(0, 200));
+        throw new Error(`Invalid JSON from ${databaseId}: ${parseError.message}`);
+    }
 
 }
 

@@ -27,13 +27,21 @@ import {
  */
 export async function createBackup(env) {
 
-    // قراءة قواعد البيانات
-    const databases = await readAllDatabases(env);
+    try {
+        // قراءة قواعد البيانات
+        const databases = await readAllDatabases(env);
 
-    // حساب Hash لكل قاعدة
-    const fishHash = await objectHash(databases.fish);
+        // التأكد من وجود البيانات
+        const fishData = databases.fish || {};
+        const tagerData = databases.tager || {};
 
-    const tagerHash = await objectHash(databases.tager);
+        console.log('Fish data keys:', Object.keys(fishData).length);
+        console.log('Tager data keys:', Object.keys(tagerData).length);
+
+        // حساب Hash لكل قاعدة
+        const fishHash = await objectHash(fishData);
+
+        const tagerHash = await objectHash(tagerData);
 
     // Hash موحد
     const masterHash = await objectHash({
@@ -78,9 +86,9 @@ export async function createBackup(env) {
 
         databases: {
 
-            fish: getDatabaseInfo(databases.fish),
+            fish: getDatabaseInfo(fishData),
 
-            tager: getDatabaseInfo(databases.tager)
+            tager: getDatabaseInfo(tagerData)
 
         },
 
@@ -99,9 +107,9 @@ export async function createBackup(env) {
     // حفظ النسخة
     await saveBackup(env, folder, {
 
-        fish: databases.fish,
+        fish: fishData,
 
-        tager: databases.tager,
+        tager: tagerData,
 
         info
 
@@ -110,9 +118,9 @@ export async function createBackup(env) {
     // تحديث latest
     await updateLatest(env, {
 
-        fish: databases.fish,
+        fish: fishData,
 
-        tager: databases.tager,
+        tager: tagerData,
 
         info
 
@@ -144,5 +152,10 @@ export async function createBackup(env) {
         info
 
     };
+
+    } catch (error) {
+        console.error('Backup creation error:', error);
+        throw new Error(`Backup failed: ${error.message}`);
+    }
 
 }
