@@ -2465,7 +2465,7 @@ function renderZaria(k){
       var zid=entry[0], z=entry[1];
       return '<div class="zaria-item"><div>'
         +'<div style="font-size:12px;font-weight:700;color:var(--cyan);">'+(z.fishType?'<span style="margin-left:6px;font-size:10px;background:rgba(0,229,255,.18);border-radius:8px;padding:1px 8px;color:var(--cyan);">'+z.fishType+'</span> ':'')+''+(z.qty||0).toLocaleString('ar-EG')+' قطعة</div>'
-        +(z.price>0?'<div style="font-size:10px;color:var(--muted);">💰 إجمالي الشراء: '+fmtCost(z.price)+'</div>':'')
+        +(z.price>0?'<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: '+fmtCost(z.price)+' ج.م · إجمالي السعر: '+fmtCost((z.qty||0)*(z.price||0))+' ج.م</div>':'')
         +'<div style="font-size:10px;color:var(--muted);">'+fmtDate(z.date)+(z.notes?' · '+z.notes:'')+'</div>'
         +'</div><button class="b-del" data-sec="'+k+'" data-zid="'+zid+'" onclick="delZaria(this.dataset.sec,this.dataset.zid)">🗑️</button></div>';
     }).join('');
@@ -2517,8 +2517,8 @@ function renderZaria(k){
     +'<input id="zf-qty-'+k+'" type="number" min="1" step="1" placeholder="مثال: 5000" class="fc" style="width:100%;"/>'
     +'</div>'
     +'<div style="margin-bottom:7px;">'
-    +'<label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">💰 سعر الشراء الإجمالي بالجنيه (اختياري)</label>'
-    +'<input id="zf-price-'+k+'" type="number" min="0" step="0.01" placeholder="0.00" class="fc" style="width:100%;"/>'
+    +'<label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">💰 سعر القطعة الواحدة بالجنيه (اختياري)</label>'
+    +'<input id="zf-price-'+k+'" type="number" min="0" step="0.01" placeholder="مثال: 1.5" class="fc" style="width:100%;"/>'
     +'</div>'
     +'<div style="margin-bottom:7px;">'
     +'<label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">📅 تاريخ الإضافة *</label>'
@@ -2620,7 +2620,7 @@ function renderZariaPage(){
         var zid=entry[0], z=entry[1];
         html += '<div class="zaria-item" style="margin-bottom:5px;">';
         html += '<div><div style="font-size:12px;font-weight:700;color:var(--cyan);">'+(z.fishType?'<span style="margin-left:6px;font-size:10px;background:rgba(0,229,255,.18);border-radius:8px;padding:1px 8px;color:var(--cyan);">'+z.fishType+'</span> ':'')+''+(z.qty||0).toLocaleString('ar-EG')+' قطعة</div>';
-        if(z.price>0) html += '<div style="font-size:10px;color:var(--muted);">💰 إجمالي الشراء: '+fmtCost(z.price)+'</div>';
+        if(z.price>0) html += '<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: '+fmtCost(z.price)+' ج.م · إجمالي السعر: '+fmtCost((z.qty||0)*(z.price||0))+' ج.م</div>';
         html += '<div style="font-size:10px;color:var(--muted);">'+fmtDate(z.date)+(z.notes?' · '+z.notes:'')+'</div></div>';
         html += '<button class="b-del" data-sec="'+k+'" data-zid="'+zid+'" onclick="delZaria(this.dataset.sec,this.dataset.zid)">🗑️</button>';
         html += '</div>';
