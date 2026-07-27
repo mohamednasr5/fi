@@ -414,11 +414,6 @@
             animation: fadeInUp 1s ease-out 0.3s both;
         }
 
-        /* Third card (APK download) spans full width on narrow layouts */
-        .nav-card:nth-child(3):last-child {
-            grid-column: 1 / -1;
-        }
-
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
@@ -524,26 +519,36 @@
             50% { transform: scale(1.06); }
         }
 
-        /* Card 3 specific - APK download */
-        .nav-card.download .card-icon-wrapper svg {
-            animation: apkBounce 2s ease-in-out infinite;
+        /* Per-card APK download button (replaces the old standalone install card) */
+        .card-apk-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: rgba(63, 220, 130, 0.12);
+            border: 1px solid rgba(63, 220, 130, 0.4);
+            color: #3fdc82;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-decoration: none;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
-        @keyframes apkBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
+        .card-apk-btn svg {
+            width: 13px;
+            height: 13px;
+            flex-shrink: 0;
         }
 
-        .nav-card.download {
-            border-color: rgba(63, 220, 130, 0.3);
-        }
-
-        .nav-card.download:hover, .nav-card.download:active {
-            border-color: rgba(63, 220, 130, 0.55);
-            box-shadow:
-                0 10px 40px rgba(63, 220, 130, 0.2),
-                0 0 60px rgba(63, 220, 130, 0.08),
-                inset 0 1px 0 rgba(255,255,255,0.05);
+        .card-apk-btn:hover, .card-apk-btn:active {
+            background: rgba(63, 220, 130, 0.22);
+            border-color: rgba(63, 220, 130, 0.7);
+            transform: scale(1.05);
         }
 
         /* ===== SVG WAVE ANIMATION (BOTTOM) ===== */
@@ -947,11 +952,8 @@
         @media (min-width: 600px) {
             .nav-cards {
                 gap: 24px;
-                max-width: 720px;
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .nav-card:nth-child(3):last-child {
-                grid-column: auto;
+                max-width: 560px;
+                grid-template-columns: repeat(2, 1fr);
             }
             .nav-card {
                 padding: 36px 24px;
@@ -1108,7 +1110,7 @@
         <!-- Navigation Cards -->
         <div class="nav-cards">
             <!-- Fish Trade Card -->
-            <a href="./tager.html" class="nav-card trade" id="cardTrade">
+            <div class="nav-card trade" id="cardTrade" data-href="./tager.html" role="link" tabindex="0">
                 <div class="card-icon-wrapper">
                     <svg viewBox="0 0 100 100" fill="none">
                         <defs>
@@ -1152,10 +1154,18 @@
                 </div>
                 <div class="card-title">تجارة الأسماك</div>
                 <div class="card-subtitle">منصة التداول والإدارة</div>
-            </a>
+                <a href="./tagar.apk" class="card-apk-btn" download rel="noopener" onclick="event.stopPropagation()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3v12"/>
+                        <path d="M7 10l5 5 5-5"/>
+                        <path d="M5 21h14"/>
+                    </svg>
+                    تحميل التطبيق
+                </a>
+            </div>
 
             <!-- Fish Farm Card -->
-            <a href="./fish.html" class="nav-card farm" id="cardFarm">
+            <div class="nav-card farm" id="cardFarm" data-href="./fish.html" role="link" tabindex="0">
                 <div class="card-icon-wrapper">
                     <svg viewBox="0 0 100 100" fill="none">
                         <defs>
@@ -1209,44 +1219,15 @@
                 </div>
                 <div class="card-title">المزرعة السمكية</div>
                 <div class="card-subtitle">إدارة المزارع والإنتاج</div>
-            </a>
-
-            <!-- Android App Download Card -->
-            <a href="https://elhadidyfish.com/elhadidy.apk" class="nav-card download" id="cardDownload" download rel="noopener">
-                <div class="card-icon-wrapper">
-                    <svg viewBox="0 0 100 100" fill="none">
-                        <defs>
-                            <linearGradient id="androidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#3fdc82"/>
-                                <stop offset="100%" stop-color="#0f9d58"/>
-                            </linearGradient>
-                        </defs>
-                        <!-- Android body -->
-                        <g transform="translate(50,52)">
-                            <rect x="-24" y="-16" width="48" height="34" rx="8" fill="url(#androidGrad)"/>
-                            <rect x="-20" y="-30" width="40" height="18" rx="9" fill="url(#androidGrad)"/>
-                            <circle cx="-9" cy="-22" r="2.4" fill="#0a1628"/>
-                            <circle cx="9" cy="-22" r="2.4" fill="#0a1628"/>
-                            <!-- antennas -->
-                            <line x1="-16" y1="-30" x2="-21" y2="-38" stroke="url(#androidGrad)" stroke-width="3" stroke-linecap="round"/>
-                            <line x1="16" y1="-30" x2="21" y2="-38" stroke="url(#androidGrad)" stroke-width="3" stroke-linecap="round"/>
-                            <!-- arms -->
-                            <rect x="-32" y="-12" width="7" height="24" rx="3.5" fill="url(#androidGrad)"/>
-                            <rect x="25" y="-12" width="7" height="24" rx="3.5" fill="url(#androidGrad)"/>
-                            <!-- legs -->
-                            <rect x="-16" y="16" width="7" height="18" rx="3.5" fill="url(#androidGrad)"/>
-                            <rect x="9" y="16" width="7" height="18" rx="3.5" fill="url(#androidGrad)"/>
-                        </g>
-                        <!-- Download arrow -->
-                        <g transform="translate(50,14)" opacity="0.9">
-                            <line x1="0" y1="-8" x2="0" y2="8" stroke="#d4a853" stroke-width="3" stroke-linecap="round"/>
-                            <polyline points="-6,3 0,9 6,3" fill="none" stroke="#d4a853" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                        </g>
+                <a href="./fish.apk" class="card-apk-btn" download rel="noopener" onclick="event.stopPropagation()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 3v12"/>
+                        <path d="M7 10l5 5 5-5"/>
+                        <path d="M5 21h14"/>
                     </svg>
-                </div>
-                <div class="card-title">تحميل التطبيق للأندرويد</div>
-                <div class="card-subtitle">تطبيق APK - النسخة الرسمية</div>
-            </a>
+                    تحميل التطبيق
+                </a>
+            </div>
         </div>
 
         <!-- SEO Content Section (visible, natural text for search & AI engines) -->
@@ -1352,6 +1333,21 @@
                 ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
                 this.appendChild(ripple);
                 setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        // ===== CARD NAVIGATION (cards are divs so they can host a nested APK link) =====
+        document.querySelectorAll('.nav-card[data-href]').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.closest('.card-apk-btn')) return; // let the APK link handle its own click
+                window.location.href = this.dataset.href;
+            });
+            card.addEventListener('keydown', function(e) {
+                if (e.target.closest('.card-apk-btn')) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    window.location.href = this.dataset.href;
+                }
             });
         });
 
