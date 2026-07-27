@@ -70,6 +70,13 @@
     --card-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  /* ⚡ إصلاح مشكلة الحاجة لضغطتين على الأزرار/الأيقونات (خصوصاً بعد تدوير التابلت):
+     المتصفح كان ينتظر ~300ms ليتأكد إن المستخدم مش بيعمل double-tap-to-zoom،
+     فالضغطة الأولى كانت بتتفسر كبداية تكبير مش كضغطة زر. touch-action:manipulation
+     يلغي هذا الانتظار ويخلي كل زر/أيقونة يستجيب من أول لمسة مباشرة. */
+  button, a, .nav-item, .btn, [onclick], input, select, textarea {
+    touch-action: manipulation;
+  }
   html, body { height: 100%; overflow: hidden; font-family: 'Cairo', sans-serif; background: var(--ocean-deep); color: var(--text-primary); }
 
   #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
@@ -3688,14 +3695,15 @@ async function presentPdfShare(pdfBlob, fileName, waText, waNum) {
   } catch (e) { canFileShare = false; }
 
   const fallback = () => {
+    // ⚡ نفتح نافذة واتساب فوراً وبشكل متزامن (بدون setTimeout) عشان
+    // المتصفح ما يعتبرهاش popup غير مسموح به (كانت سبب ظهور صفحة بيضاء
+    // فارغة على بعض التابلت بسبب تأخير الفتح عن لحظة ضغطة المستخدم)
+    window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(waText)}`, '_blank');
     const url = URL.createObjectURL(pdfBlob);
     const a = document.createElement('a');
     a.href = url; a.download = fileName; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    setTimeout(() => {
-      window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(waText)}`, '_blank');
-      showToast('📲 تم تحميل PDF وفتح واتساب — أرفق الملف من التنزيلات');
-    }, 800);
+    showToast('📲 تم تحميل PDF وفتح واتساب — أرفق الملف من التنزيلات');
   };
 
   if (!canFileShare) { fallback(); return; }
@@ -4020,19 +4028,15 @@ window.sendAllEnteredInvoicesWhatsApp = async function() {
       }
     }
 
-    // Fallback: Download PDF + Open WhatsApp with text
+    // Fallback: Open WhatsApp فوراً (بشكل متزامن مع ضغطة المستخدم لتفادي حظر المتصفح للنافذة) + تحميل الـPDF
+    window.open(`https://wa.me/?text=${encodeURIComponent(waSummary)}`, '_blank');
     const url = URL.createObjectURL(pdfBlob);
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-    // Open WhatsApp with summary text
-    setTimeout(() => {
-      window.open(`https://wa.me/?text=${encodeURIComponent(waSummary)}`, '_blank');
-      showToast('📲 تم تحميل PDF وفتح واتساب — أرفق الملف من التنزيلات');
-    }, 800);
+    showToast('📲 تم تحميل PDF وفتح واتساب — أرفق الملف من التنزيلات');
 
   } catch (e) {
     console.error(e);
@@ -7764,7 +7768,7 @@ window.confirmLogout = function() {
     msg: 'هل أنت متأكد أنك تريد تسجيل الخروج من النظام؟',
     confirmLabel: 'تسجيل الخروج',
     confirmColor: 'linear-gradient(135deg,var(--ocean-surface),var(--danger))',
-    onConfirm: () => location.reload()
+    onConfirm: () => { location.href = 'https://elhadidyfish.com/'; }
   });
 };
 
