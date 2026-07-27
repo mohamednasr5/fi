@@ -55,6 +55,10 @@
   --feed-cost-color:#f4a261;--feed-cost-bg:rgba(244,162,97,.08);--feed-cost-border:rgba(244,162,97,.25);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+/* Make every tap register on the FIRST touch (no 300ms double-tap-to-zoom
+   disambiguation delay, no scroll-vs-tap ambiguity on scrollable rails) */
+button,.btn,.btn-sm,.nav-item,.b-edit,.b-del,a,[onclick],select,.fc,
+.sec-name,.sec-ico,.zaria-item,.nav-icon,.nav-label{touch-action:manipulation;}
 html,body{height:100%;background:var(--deep);color:var(--text);font-family:'Cairo',sans-serif;overflow-x:hidden;overscroll-behavior:none;}
 
 /* ══════════════════════════════════════
@@ -644,6 +648,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     border-top: none; border-left: 1px solid rgba(0,229,255,0.15);
     background: linear-gradient(180deg, rgba(7,30,53,0.97) 0%, rgba(4,17,31,0.97) 100%);
     overflow-y: auto;
+    touch-action: pan-y;
     box-shadow: -4px 0 24px rgba(0,0,0,0.4);
   }
   .bottom-nav::-webkit-scrollbar { width: 0; }
@@ -1297,6 +1302,37 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
   </div>
 </div>
 
+<div class="mo" id="mo-zaria" onclick="cModal('mo-zaria',event)">
+  <div class="mo-box">
+    <div class="mo-hdl"></div>
+    <div class="mo-ttl">✏️ تعديل بيانات الزريعة</div>
+    <input type="hidden" id="ez-id"><input type="hidden" id="ez-sec">
+    <div class="fg"><label class="fl">🐠 نوع السمك</label>
+      <select class="fc" id="ez-fishtype">
+        <option value="بوري">🐟 بوري</option><option value="طوبار">🐠 طوبار</option>
+        <option value="شبار">🐡 شبار</option>
+      </select></div>
+    <div class="fg"><label class="fl">🔢 الكمية (بالعدد)</label><input class="fc" type="number" id="ez-qty" min="1" step="1" oninput="ezUpdateTotal()"></div>
+    <div class="fg">
+      <label class="fl" style="color:var(--cost-color);">💰 سعر القطعة الواحدة <span style="font-size:10px;color:var(--muted);">(اختياري)</span></label>
+      <div class="price-input-wrap">
+        <input class="fc" type="number" id="ez-price" min="0" step="0.01" placeholder="0.00" style="border-color:var(--cost-border);padding-left:50px;" oninput="ezUpdateTotal()">
+        <span class="price-currency">ج.م</span>
+      </div>
+    </div>
+    <div class="fg" id="ez-total-wrap" style="display:none;">
+      <label class="fl" style="color:var(--cyan);">🧮 إجمالي سعر الزريعة</label>
+      <div id="ez-total-val" style="font-size:15px;font-weight:800;color:var(--cyan);background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:9px;padding:8px 12px;">0 ج.م</div>
+    </div>
+    <div class="fg"><label class="fl">📅 التاريخ</label><input class="fc" type="date" id="ez-date"></div>
+    <div class="fg"><label class="fl">📝 ملاحظات <span style="font-size:10px;color:var(--muted);">(اختياري)</span></label><input class="fc" type="text" id="ez-notes" placeholder="مثال: دفعة أولى..."></div>
+    <div style="display:flex;gap:9px;">
+      <button class="btn btn-green" id="ez-save-btn" onclick="saveEditZaria()">💾 حفظ</button>
+      <button class="btn btn-danger" onclick="cModal('mo-zaria')">✕ إلغاء</button>
+    </div>
+  </div>
+</div>
+
 <div class="mo" id="mo-flog" onclick="cModal('mo-flog',event)">
   <div class="mo-box">
     <div class="mo-hdl"></div>
@@ -1498,12 +1534,9 @@ function closeWelcome(){
 }
 
 function doLogout(){
-  currentUser=null; pinBuffer=''; updatePinDots();
-  document.getElementById('manual-pw').value=''; document.getElementById('login-err').classList.remove('show');
-  document.getElementById('app').style.display='none'; document.getElementById('welcome-banner').classList.remove('show');
-  document.getElementById('login-screen').style.display='flex'; document.body.classList.remove('viewer-mode');
-  document.getElementById('viewer-badge').classList.remove('show');
+  currentUser=null; pinBuffer='';
   Object.assign(state,{sectors:{},store:{},logs:{}});
+  window.location.href='https://elhadidyfish.com/';
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -2465,9 +2498,9 @@ function renderZaria(k){
       var zid=entry[0], z=entry[1];
       return '<div class="zaria-item"><div>'
         +'<div style="font-size:12px;font-weight:700;color:var(--cyan);">'+(z.fishType?'<span style="margin-left:6px;font-size:10px;background:rgba(0,229,255,.18);border-radius:8px;padding:1px 8px;color:var(--cyan);">'+z.fishType+'</span> ':'')+''+(z.qty||0).toLocaleString('ar-EG')+' قطعة</div>'
-        +(z.price>0?'<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: '+fmtCost(z.price)+' ج.م · إجمالي السعر: '+fmtCost((z.qty||0)*(z.price||0))+' ج.م</div>':'')
+        +(z.price>0?'<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: '+fmtCost(z.price)+' · إجمالي السعر: '+fmtCost((z.qty||0)*(z.price||0))+'</div>':'')
         +'<div style="font-size:10px;color:var(--muted);">'+fmtDate(z.date)+(z.notes?' · '+z.notes:'')+'</div>'
-        +'</div><button class="b-del" data-sec="'+k+'" data-zid="'+zid+'" onclick="delZaria(this.dataset.sec,this.dataset.zid)">🗑️</button></div>';
+        +'</div><div style="display:flex;gap:5px;"><button class="b-edit" data-sec="'+k+'" data-zid="'+zid+'" onclick="openEditZaria(this.dataset.sec,this.dataset.zid)">✏️</button><button class="b-del" data-sec="'+k+'" data-zid="'+zid+'" onclick="delZaria(this.dataset.sec,this.dataset.zid)">🗑️</button></div></div>';
     }).join('');
     if(zariaQtyT>0){
       h += '<div style="background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.25);border-radius:9px;padding:9px 13px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">'
@@ -2620,9 +2653,9 @@ function renderZariaPage(){
         var zid=entry[0], z=entry[1];
         html += '<div class="zaria-item" style="margin-bottom:5px;">';
         html += '<div><div style="font-size:12px;font-weight:700;color:var(--cyan);">'+(z.fishType?'<span style="margin-left:6px;font-size:10px;background:rgba(0,229,255,.18);border-radius:8px;padding:1px 8px;color:var(--cyan);">'+z.fishType+'</span> ':'')+''+(z.qty||0).toLocaleString('ar-EG')+' قطعة</div>';
-        if(z.price>0) html += '<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: '+fmtCost(z.price)+' ج.م · إجمالي السعر: '+fmtCost((z.qty||0)*(z.price||0))+' ج.م</div>';
+        if(z.price>0) html += '<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: '+fmtCost(z.price)+' · إجمالي السعر: '+fmtCost((z.qty||0)*(z.price||0))+'</div>';
         html += '<div style="font-size:10px;color:var(--muted);">'+fmtDate(z.date)+(z.notes?' · '+z.notes:'')+'</div></div>';
-        html += '<button class="b-del" data-sec="'+k+'" data-zid="'+zid+'" onclick="delZaria(this.dataset.sec,this.dataset.zid)">🗑️</button>';
+        html += '<div style="display:flex;gap:5px;"><button class="b-edit" data-sec="'+k+'" data-zid="'+zid+'" onclick="openEditZaria(this.dataset.sec,this.dataset.zid)">✏️</button><button class="b-del" data-sec="'+k+'" data-zid="'+zid+'" onclick="delZaria(this.dataset.sec,this.dataset.zid)">🗑️</button></div>';
         html += '</div>';
       });
     }
@@ -3053,6 +3086,45 @@ async function saveEditFish(){
   try{
     await window.dbUpdate(window.dbRef(db,`sectors/${sec}/fish/${fid}`), upd);
     cModal('mo-fish'); toast('✅ تم التعديل','ok');
+  } finally { restoreBtn(); }
+}
+function openEditZaria(sec,zid){
+  const z=state.sectors[sec]?.zaria?.[zid]; if(!z) return;
+  document.getElementById('ez-id').value=zid; document.getElementById('ez-sec').value=sec;
+  document.getElementById('ez-fishtype').value=z.fishType||'بوري';
+  document.getElementById('ez-qty').value=z.qty||'';
+  document.getElementById('ez-price').value=z.price||'';
+  document.getElementById('ez-date').value=z.date||'';
+  document.getElementById('ez-notes').value=z.notes||'';
+  ezUpdateTotal();
+  oModal('mo-zaria');
+}
+function ezUpdateTotal(){
+  const qty=parseFloat(document.getElementById('ez-qty').value)||0;
+  const price=parseFloat(document.getElementById('ez-price').value)||0;
+  const wrap=document.getElementById('ez-total-wrap');
+  if(price>0){
+    wrap.style.display='block';
+    document.getElementById('ez-total-val').textContent=fmtCost(qty*price);
+  } else {
+    wrap.style.display='none';
+  }
+}
+async function saveEditZaria(){
+  const btn=document.getElementById('ez-save-btn');
+  if(btn){ if(btn.disabled) return; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> جاري الحفظ...'; }
+  const restoreBtn=()=>{ if(btn){ btn.disabled=false; btn.innerHTML='💾 حفظ'; } };
+  const sec=document.getElementById('ez-sec').value; const zid=document.getElementById('ez-id').value;
+  const qty=parseInt(document.getElementById('ez-qty').value);
+  const price=parseFloat(document.getElementById('ez-price').value)||0;
+  if(!qty||qty<=0){ restoreBtn(); return toast('❌ أدخل كمية صحيحة','err'); }
+  const date=document.getElementById('ez-date').value;
+  if(!date){ restoreBtn(); return toast('❌ اختر التاريخ','err'); }
+  const notes=document.getElementById('ez-notes').value.trim();
+  const upd={ fishType:document.getElementById('ez-fishtype').value, qty, price, date, notes: notes||null };
+  try{
+    await window.dbUpdate(window.dbRef(db,`sectors/${sec}/zaria/${zid}`), upd);
+    cModal('mo-zaria'); toast('✅ تم تعديل الزريعة','ok');
   } finally { restoreBtn(); }
 }
 async function delFish(sec,fid){
