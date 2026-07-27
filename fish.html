@@ -1291,7 +1291,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     <div class="fg"><label class="fl">التاريخ</label><input class="fc" type="date" id="ef-date"></div>
     <div class="fg"><label class="fl">📝 ملاحظات / تفاصيل <span style="font-size:10px;color:var(--muted);">(اختياري)</span></label><textarea class="fc" id="ef-notes" placeholder="أدخل أي ملاحظات أو تفاصيل..." rows="2" style="resize:vertical;min-height:48px;"></textarea></div>
     <div style="display:flex;gap:9px;">
-      <button class="btn btn-green" onclick="saveEditFish()">💾 حفظ</button>
+      <button class="btn btn-green" id="ef-save-btn" onclick="saveEditFish()">💾 حفظ</button>
       <button class="btn btn-danger" onclick="cModal('mo-fish')">✕ إلغاء</button>
     </div>
   </div>
@@ -1322,7 +1322,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     <div class="fg"><label class="fl">التاريخ</label><input class="fc" type="date" id="efl-date"></div>
     <div class="fg"><label class="fl">ملاحظات</label><input class="fc" type="text" id="efl-notes"></div>
     <div style="display:flex;gap:9px;">
-      <button class="btn" onclick="saveEditFeedLog()">💾 حفظ</button>
+      <button class="btn" id="efl-save-btn" onclick="saveEditFeedLog()">💾 حفظ</button>
       <button class="btn btn-danger" onclick="cModal('mo-flog')">✕ إلغاء</button>
     </div>
   </div>
@@ -1339,7 +1339,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     <div class="fg"><label class="fl">طن (كامل)</label><input class="fc" type="number" id="es-ton" min="0" step="0.001"></div>
     <div class="ibox" id="es-preview" style="margin-bottom:12px;"></div>
     <div style="display:flex;gap:9px;">
-      <button class="btn btn-gold" onclick="saveEditStore()">💾 تحديث الرصيد</button>
+      <button class="btn btn-gold" id="es-save-btn" onclick="saveEditStore()">💾 تحديث الرصيد</button>
       <button class="btn btn-danger" onclick="cModal('mo-store')">✕ إلغاء</button>
     </div>
   </div>
@@ -1357,7 +1357,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     </div>
     <div class="fg"><label class="fl">التاريخ</label><input class="fc" type="date" id="esl-date"></div>
     <div style="display:flex;gap:9px;">
-      <button class="btn btn-green" onclick="saveEditStoreLog()">💾 حفظ وتحديث المخزن</button>
+      <button class="btn btn-green" id="esl-save-btn" onclick="saveEditStoreLog()">💾 حفظ وتحديث المخزن</button>
       <button class="btn btn-danger" onclick="cModal('mo-slog')">✕ إلغاء</button>
     </div>
   </div>
@@ -3041,14 +3041,19 @@ function openEditFish(sec,fid){
   oModal('mo-fish');
 }
 async function saveEditFish(){
+  const btn=document.getElementById('ef-save-btn');
+  if(btn){ if(btn.disabled) return; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> جاري الحفظ...'; }
+  const restoreBtn=()=>{ if(btn){ btn.disabled=false; btn.innerHTML='💾 حفظ'; } };
   const sec=document.getElementById('ef-sec').value; const fid=document.getElementById('ef-id').value;
   const v=parseFloat(document.getElementById('ef-val').value); const price=parseFloat(document.getElementById('ef-price').value)||0;
-  if(!v||v<=0) return toast('❌ قيمة غير صحيحة','err');
+  if(!v||v<=0) { restoreBtn(); return toast('❌ قيمة غير صحيحة','err'); }
   const efNotes = document.getElementById('ef-notes').value.trim();
   const upd={ type:document.getElementById('ef-type').value, value:v, unit:document.getElementById('ef-unit').value, date:document.getElementById('ef-date').value, notes: efNotes||null };
   if(price>0) upd.price=price; else upd.price=null;
-  await window.dbUpdate(window.dbRef(db,`sectors/${sec}/fish/${fid}`), upd);
-  cModal('mo-fish'); toast('✅ تم التعديل','ok');
+  try{
+    await window.dbUpdate(window.dbRef(db,`sectors/${sec}/fish/${fid}`), upd);
+    cModal('mo-fish'); toast('✅ تم التعديل','ok');
+  } finally { restoreBtn(); }
 }
 async function delFish(sec,fid){
   if(!confirm('حذف هذا السجل؟')) return;
@@ -3077,6 +3082,10 @@ function openEditFeedLog(lid){
   oModal('mo-flog');
 }
 async function saveEditFeedLog(){
+  const btn=document.getElementById('efl-save-btn');
+  if(btn){ if(btn.disabled) return; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> جاري الحفظ...'; }
+  const restoreBtn=()=>{ if(btn){ btn.disabled=false; btn.innerHTML='💾 حفظ'; } };
+  try{
   const lid=document.getElementById('efl-id').value;
   const newQty=parseFloat(document.getElementById('efl-qty').value);
   if(!newQty||newQty<=0) return toast('❌ كمية غير صحيحة','err');
@@ -3114,6 +3123,7 @@ async function saveEditFeedLog(){
     oldQty:l.qty||0,qty:_newQtyEfl,date:l.date,ts:ts(),
     stockBefore:_eflB.toFixed(1)+' كجم',stockAfter:_eflA.toFixed(1)+' كجم'});
   toast('✅ تم التعديل وتحديث المخزن','ok');
+  } finally { restoreBtn(); }
 }
 function calcEflCostPreview(){
   const qty=parseFloat(document.getElementById('efl-qty').value)||0;
@@ -3144,6 +3154,10 @@ function openEditStoreLog(lid) {
 }
 
 async function saveEditStoreLog() {
+  const btn=document.getElementById('esl-save-btn');
+  if(btn){ if(btn.disabled) return; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> جاري الحفظ...'; }
+  const restoreBtn=()=>{ if(btn){ btn.disabled=false; btn.innerHTML='💾 حفظ وتحديث المخزن'; } };
+  try{
   const lid = document.getElementById('esl-id').value;
   const newVal = parseFloat(document.getElementById('esl-val').value);
   const newDate = document.getElementById('esl-date').value;
@@ -3175,6 +3189,7 @@ async function saveEditStoreLog() {
     stockBefore:_eslB.toFixed(1)+' كجم',stockAfter:_eslA.toFixed(1)+' كجم'});
   cModal('mo-slog');
   toast('✅ تم تعديل العملية وتحديث رصيد المخزن تلقائياً','ok');
+  } finally { restoreBtn(); }
 }
 
 async function delStoreLog(lid) {
@@ -3222,10 +3237,15 @@ function updateEsPreview(){
 }
 document.addEventListener('input',e=>{ if(['es-b25','es-b50','es-ton'].includes(e.target?.id)) updateEsPreview(); });
 async function saveEditStore(){
+  const btn=document.getElementById('es-save-btn');
+  if(btn){ if(btn.disabled) return; btn.disabled=true; btn.innerHTML='<span class="spinner"></span> جاري الحفظ...'; }
+  const restoreBtn=()=>{ if(btn){ btn.disabled=false; btn.innerHTML='💾 تحديث الرصيد'; } };
   const key=document.getElementById('es-key').value;
   const b25=parseFloat(document.getElementById('es-b25').value)||0; const b50=parseFloat(document.getElementById('es-b50').value)||0; const ton=parseFloat(document.getElementById('es-ton').value)||0;
-  await window.dbSet(window.dbRef(db,`store/${key}`),{b25,b50,ton});
-  cModal('mo-store'); toast('✅ تم تحديث المخزون','ok');
+  try{
+    await window.dbSet(window.dbRef(db,`store/${key}`),{b25,b50,ton});
+    cModal('mo-store'); toast('✅ تم تحديث المخزون','ok');
+  } finally { restoreBtn(); }
 }
 
 function oModal(id){ document.getElementById(id).classList.add('open'); }

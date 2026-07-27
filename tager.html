@@ -1541,6 +1541,10 @@ window.appState = {
   currentFilter: 'all',
   deferredPrompt: null,
   fishItems: [],
+  // ⭐ أسعار الزريعة المحفوظة
+  seedPrices: {
+    'بلطي': 0, 'جمبري': 0, 'مبروك': 0, 'سلور': 0, 'قاروص': 0, 'دنيس': 0
+  },
   expenses: [],
   additions: [],
   nextItemId: 0,
@@ -1769,6 +1773,12 @@ function buildFishRowHTML(item) {
   const kgEq = item.qty * uDef.kgFactor;
   const kgEqText = unit !== 'kg' ? `${item.qty} ${uDef.label} = ${kgEq.toFixed(unit==='wqa'?2:0)} كيلو` : '';
   const displayName = item.isOther ? '✏️ صنف مخصص' : ('🐟 ' + item.fishName);
+  
+  // ⭐ عرض سعر الزريعة المحفوظ (إن وجد)
+  const seedPriceDisplay = !item.isOther && window.appState.seedPrices[item.fishName] 
+    ? `<span style="font-size:11px;color:var(--gold);margin-right:8px">💰 السعر المقترح: ${window.appState.seedPrices[item.fishName]} ج.م</span>`
+    : '';
+  
   return `
     <div class="fish-item-row" id="fish-row-${id}">
       <button class="remove-fish-btn" onclick="removeFishItem(${id})" title="حذف هذا الصنف">✕</button>
@@ -1781,7 +1791,10 @@ function buildFishRowHTML(item) {
           placeholder="اكتب اسم الصنف المخصص..."
           value="${item.customName || ''}"
           oninput="window.appState.fishItems.find(x=>x.id===${id}).customName=this.value">
-      ` : ''}
+      ` : `<div style="padding:8px;background:rgba(0,180,216,0.08);border-radius:8px;margin-bottom:8px;font-size:12px;display:flex;align-items:center;justify-content:space-between">
+        <span>${seedPriceDisplay || '<span style=\"color:var(--text-secondary)\">لا يوجد سعر مقترح</span>'}</span>
+        <button onclick="showPriceSettings('${item.fishName}')" style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:700">⚙️ تعديل</button>
+      </div>`}
       <div class="unit-grid">${unitButtons}</div>
       <div class="unit-info-box" id="fish-info-${id}"
         style="${unit !== 'kg' && item.qty > 0 ? 'display:block;' : 'display:none;'}background:${unit==='wqa'?'rgba(255,165,0,0.08)':unit==='box20'?'rgba(0,200,150,0.08)':'rgba(192,132,252,0.08)'};border:1px solid ${unit==='wqa'?'rgba(255,165,0,0.3)':unit==='box20'?'rgba(0,200,150,0.3)':'rgba(192,132,252,0.3)'};color:${unit==='wqa'?'var(--warning)':unit==='box20'?'var(--emerald)':'#c084fc'}">
@@ -1851,6 +1864,89 @@ window.setItemUnit = function(id, unit) {
     row.replaceWith(tmp.firstElementChild);
   }
   updateInvoiceSummary();
+};
+
+// ⭐ دالة عرض نافذة تعديل أسعار الزريعة
+window.showPriceSettings = function(fishName) {
+  const currentPrice = window.appState.seedPrices[fishName] || 0;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.style.zIndex = '9999';
+  modal.innerHTML = `
+    <div class="modal-sheet" style="max-width:320px">
+      <div class="modal-handle"></div>
+      <div class="modal-title" style="text-align:center">💰 تعديل سعر الزريعة</div>
+      <div style="padding:20px;text-align:center">
+        <div style="font-size:32px;margin-bottom:16px;font-weight:900;color:var(--gold)">🐟 ${fishName}</div>
+        <input type="number" id="price-input-${fishName}" 
+          value="${currentPrice}" 
+          placeholder="أدخل السعر"
+          min="0" step="0.01" inputmode="decimal"
+          style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(0,180,216,0.3);background:rgba(0,180,216,0.08);color:var(--text-primary);font-family:Cairo,sans-serif;font-size:16px;text-align:center;font-weight:700;margin-bottom:16px">
+        <div style="display:flex;gap:10px">
+          <button onclick="savePriceUpdate('${fishName}')" style="flex:1;background:var(--emerald);color:#000;border:none;padding:12px;border-radius:10px;font-weight:700;cursor:pointer;font-family:Cairo,sans-serif;font-size:14px">✅ حفظ</button>
+          <button onclick="closePriceModal()" style="flex:1;background:rgba(255,255,255,0.1);color:var(--text-secondary);border:1px solid rgba(255,255,255,0.2);padding:12px;border-radius:10px;font-weight:700;cursor:pointer;font-family:Cairo,sans-serif;font-size:14px">❌ إلغاء</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closePriceModal();
+  });
+  
+  setTimeout(() => {
+    const inp = document.getElementById(`price-input-${fishName}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }, 100);
+};
+
+// ⭐ إغلاق نافذة تعديل السعر
+window.closePriceModal = function() {
+  const modals = document.querySelectorAll('.modal-overlay');
+  modals.forEach(m => {
+    if (m.querySelector('.modal-title')?.textContent.includes('سعر الزريعة')) {
+      m.remove();
+    }
+  });
+};
+
+// ⭐ حفظ السعر الجديد
+window.savePriceUpdate = function(fishName) {
+  const inp = document.getElementById(`price-input-${fishName}`);
+  if (!inp) return;
+  const newPrice = parseFloat(inp.value) || 0;
+  window.appState.seedPrices[fishName] = newPrice;
+  
+  // ⚡ حفظ في localStorage للاحتفاظ به
+  try {
+    localStorage.setItem('seedPrices', JSON.stringify(window.appState.seedPrices));
+  } catch (e) { console.log('Storage error:', e); }
+  
+  // 🔄 تحديث واجهة جميع الأسماك المتعلقة
+  const items = window.appState.fishItems.filter(i => i.fishName === fishName && !i.isOther);
+  items.forEach(item => {
+    const row = document.getElementById(`fish-row-${item.id}`);
+    if (row) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = buildFishRowHTML(item);
+      row.replaceWith(tmp.firstElementChild);
+    }
+  });
+  
+  showToast(`✅ تم تحديث سعر ${fishName} إلى ${newPrice} ج.م`);
+  window.closePriceModal();
+};
+
+// ⭐ تحميل أسعار الزريعة المحفوظة عند بدء البرنامج
+window.loadSavedPrices = function() {
+  try {
+    const saved = localStorage.getItem('seedPrices');
+    if (saved) {
+      window.appState.seedPrices = JSON.parse(saved);
+    }
+  } catch (e) { console.log('Load prices error:', e); }
 };
 
 // ============================================================
@@ -2092,7 +2188,16 @@ document.getElementById('inv-phone').addEventListener('input', function() {
 // ============================================================
 // SAVE INVOICE
 // ============================================================
+// ⚡ متغير منع النقرات المتعددة
+window.isSavingInvoice = false;
+
 window.saveInvoice = async function() {
+  // 🛡️ منع النقرات المتعددة
+  if (window.isSavingInvoice) {
+    showToast('⏳ جاري حفظ الفاتورة... الرجاء الانتظار');
+    return;
+  }
+  
   const clientName = document.getElementById('inv-client').value.trim();
   const phone = document.getElementById('inv-phone').value.trim();
   const shopName = document.getElementById('inv-shop').value.trim();
@@ -2134,8 +2239,12 @@ window.saveInvoice = async function() {
   const commissionAmt = Math.round((fishTotal * commissionPct) / 100);
   const netTotal = Math.max(Math.round(fishTotal - expTotal + addTotal - commissionAmt), 0);
 
+  window.isSavingInvoice = true;
   const btn = document.getElementById('save-invoice-btn');
-  btn.innerHTML = '<span class="spinner"></span> جاري الحفظ...'; btn.disabled = true;
+  const originalBtnHTML = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> جاري الحفظ...'; 
+  btn.disabled = true;
+  
   try {
     const invDate = new Date(invDateISO + 'T12:00:00');
     const dateStr = invDate.toLocaleDateString('en-GB'); 
@@ -2148,35 +2257,49 @@ window.saveInvoice = async function() {
       paid: 0, remaining: netTotal,
       date: invDate.toISOString(), dateStr, invDateISO, createdAt: Date.now()
     };
+    
+    // ⚡ حفظ متوازي (بدل انتظار كل عملية)
     const invRef = push(ref(db, 'invoices'));
     const invNum = generateInvoiceNumber(invRef.key);
     invoice.invoiceNumber = invNum;
-    await set(invRef, invoice);
-    const clientKey = phone;
-    const clientRef = ref(db, 'clients/' + clientKey);
-    const clientSnap = await get(clientRef);
-    if (clientSnap.exists()) {
-      const existing = clientSnap.val();
-      await update(clientRef, {
-        name: clientName, phone,
-        totalDebt: (existing.totalDebt || 0) + netTotal,
-        totalPurchases: (existing.totalPurchases || 0) + netTotal,
-        invoiceCount: (existing.invoiceCount || 0) + 1,
-        lastInvoice: invDate.toISOString()
-      });
-    } else {
-      await set(clientRef, {
-        name: clientName, phone, shopName,
-        totalDebt: netTotal, totalPurchases: netTotal, totalPaid: 0,
-        invoiceCount: 1, lastInvoice: invDate.toISOString()
-      });
-    }
+    
+    // ⚡ تشغيل العمليات بالتوازي بدل التسلسل
+    const [setResult] = await Promise.all([
+      set(invRef, invoice),
+      // حفظ بيانات العميل بشكل متزامن
+      (async () => {
+        try {
+          const clientKey = phone;
+          const clientRef = ref(db, 'clients/' + clientKey);
+          const clientSnap = await get(clientRef);
+          if (clientSnap.exists()) {
+            const existing = clientSnap.val();
+            await update(clientRef, {
+              name: clientName, phone,
+              totalDebt: (existing.totalDebt || 0) + netTotal,
+              totalPurchases: (existing.totalPurchases || 0) + netTotal,
+              invoiceCount: (existing.invoiceCount || 0) + 1,
+              lastInvoice: invDate.toISOString()
+            });
+          } else {
+            await set(clientRef, {
+              name: clientName, phone, shopName,
+              totalDebt: netTotal, totalPurchases: netTotal, totalPaid: 0,
+              invoiceCount: 1, lastInvoice: invDate.toISOString()
+            });
+          }
+        } catch (e) { console.log('Client update error:', e); }
+      })()
+    ]);
+    
     showToast('✅ تم حفظ الفاتورة بنجاح!');
     showInvoicePreview(invoice, invRef.key);
   } catch (err) {
     showToast('❌ حدث خطأ: ' + err.message);
   } finally {
-    btn.innerHTML = '💾 حفظ الفاتورة'; btn.disabled = false;
+    window.isSavingInvoice = false;
+    btn.innerHTML = originalBtnHTML; 
+    btn.disabled = false;
   }
 };
 
@@ -2680,15 +2803,29 @@ window.exportClientStatementPDF = async function(clientKey) {
 // ============================================================
 // FIREBASE LISTENERS
 // ============================================================
+// تجميع عمليات إعادة الرسم: أي عدد من تحديثات قاعدة البيانات في نفس اللحظة
+// (كتابة محلية فورية + تأكيد من السيرفر، أو عدة كتابات متتالية) يتم دمجها
+// في إعادة رسم واحدة بدل تكرار رسم القوائم الكاملة كل مرة، وهو السبب
+// الرئيسي في تجمّد الواجهة وشعور المستخدم بأنه يحتاج للضغط أكثر من مرة.
+const __renderTimers = {};
+function debounceRender(key, fn, delay) {
+  clearTimeout(__renderTimers[key]);
+  __renderTimers[key] = setTimeout(fn, delay || 150);
+}
+
 function setupListeners() {
   onValue(ref(db, 'invoices'), snap => {
     window.appState.invoices = snap.val() || {};
-    updateDashboard(); renderHistory(); renderPricesPage();
-    if (typeof renderEnteredInvoices === 'function') renderEnteredInvoices();
+    debounceRender('invoices', () => {
+      updateDashboard(); renderHistory(); renderPricesPage();
+      if (typeof renderEnteredInvoices === 'function') renderEnteredInvoices();
+    });
   });
   onValue(ref(db, 'clients'), snap => {
     window.appState.clients = snap.val() || {};
-    updateDashboard(); renderClients(); updateClientDatalist(); updateCompareDropdowns();
+    debounceRender('clients', () => {
+      updateDashboard(); renderClients(); updateClientDatalist(); updateCompareDropdowns();
+    });
   });
 }
 
@@ -3534,76 +3671,125 @@ window.exportAllEnteredInvoicesPDF = function() {
 // ============================================================
 // ★ SEND INVOICE PDF VIA WHATSAPP ★
 // ============================================================
+// ============================================================
+// ★ مشاركة PDF عبر واتساب — نافذة تأكيد بضغطة واحدة ★
+// تولّد الملف أولاً، ثم تنتظر ضغطة صريحة من المستخدم لتشغيل
+// navigator.share فوراً (لفتة مستخدم طازجة) بدل استدعائه بعد تأخير
+// توليد الملف، وهو ما كان يسبب سقوط المشاركة في بعض المتصفحات
+// (خصوصاً سفاري/آيفون) إلى وضع "تحميل فقط بدون إرفاق الملف".
+// ============================================================
+async function presentPdfShare(pdfBlob, fileName, waText, waNum) {
+  let canFileShare = false;
+  try {
+    if (navigator.share && navigator.canShare) {
+      const testFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      canFileShare = navigator.canShare({ files: [testFile] });
+    }
+  } catch (e) { canFileShare = false; }
+
+  const fallback = () => {
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => {
+      window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(waText)}`, '_blank');
+      showToast('📲 تم تحميل PDF وفتح واتساب — أرفق الملف من التنزيلات');
+    }, 800);
+  };
+
+  if (!canFileShare) { fallback(); return; }
+
+  showConfirmModal({
+    icon: '📲', title: 'الفاتورة جاهزة',
+    msg: `ملف PDF الكامل جاهز للإرسال.<br><span style="color:var(--emerald);font-size:12px">اضغط الزر لإرفاقه مباشرة في واتساب</span>`,
+    confirmLabel: '📤 إرسال الآن',
+    confirmColor: 'linear-gradient(135deg,#25D366,#128C7E)',
+    onConfirm: async () => {
+      try {
+        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        await navigator.share({ text: waText, files: [file] });
+        showToast('✅ تم فتح مشاركة الفاتورة');
+      } catch (shareErr) {
+        if (shareErr?.name === 'AbortError') { showToast('ℹ️ تم إلغاء المشاركة'); return; }
+        fallback();
+      }
+    }
+  });
+}
+
+// ⚡ متغير منع التوليد المتعدد للـ PDF
+window.isGeneratingPDF = false;
+
 window.sendInvoicePDFWhatsApp = async function(invoiceId) {
+  // 🛡️ منع عمليات PDF المتعددة
+  if (window.isGeneratingPDF) {
+    showToast('⏳ جاري تحضير ملف PDF... الرجاء الانتظار');
+    return;
+  }
+  
+  window.isGeneratingPDF = true;
   const inv = window.appState.invoices[invoiceId];
-  if (!inv) return showToast('❌ الفاتورة غير موجودة');
-  showToast('⏳ جاري تجهيز الفاتورة للإرسال...');
+  if (!inv) {
+    window.isGeneratingPDF = false;
+    return showToast('❌ الفاتورة غير موجودة');
+  }
+  
+  showToast('⏳ جاري تحضير الفاتورة و PDF...');
 
   try {
+    // ⚡ توليد HTML بسرعة بدل استخدام html2canvas
     const pdfHTML = buildInvoicePDFHTML(inv, invoiceId);
     const invNum = inv.invoiceNumber || generateInvoiceNumber(invoiceId);
     const clientName = (inv.clientName || 'عميل').replace(/\s+/g, '_');
     const fileName = `فاتورة_${clientName}_${invNum}.pdf`;
 
-    // Create a temporary container for PDF generation
+    // ⚡ إنشاء Container محسّن
     const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;';
+    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:white;';
     tempDiv.innerHTML = pdfHTML;
     document.body.appendChild(tempDiv);
 
+    // ⚡ إعدادات PDF محسّنة للسرعة
     const opt = {
       margin: 0,
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      image: { type: 'jpeg', quality: 0.85 }, // تقليل الجودة قليلاً للسرعة
+      html2canvas: { scale: 1.5, useCORS: true, letterRendering: false, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
     };
 
     const pdfBlob = await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
-    document.body.removeChild(tempDiv);
+    
+    // ⚡ حذف سريع
+    if (document.body.contains(tempDiv)) {
+      document.body.removeChild(tempDiv);
+    }
 
-    // Build WhatsApp text message
+    // ⏱️ بناء رسالة الواتساب بسرعة
     const waText = buildInvoiceText(inv);
     const waNum = '2' + inv.phone;
 
-    // Try Web Share API first (works on mobile for sharing files)
-    if (navigator.share && navigator.canShare) {
-      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const shareData = {
-        text: waText,
-        files: [file]
-      };
-      if (navigator.canShare(shareData)) {
-        try {
-          await navigator.share(shareData);
-          showToast('✅ تم فتح مشاركة الفاتورة');
-          return;
-        } catch (shareErr) {
-          if (shareErr.name === 'AbortError') {
-            showToast('ℹ️ تم إلغاء المشاركة');
-            return;
-          }
-        }
-      }
-    }
-
-    // Fallback: Download PDF + Open WhatsApp with text
-    const url = URL.createObjectURL(pdfBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-    // Open WhatsApp with the invoice text
-    setTimeout(() => {
-      window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(waText)}`, '_blank');
-      showToast('📲 تم تحميل PDF وفتح واتساب — أرفق الملف من التنزيلات');
-    }, 800);
+    // ⚡ عرض خيارات الإرسال
+    await presentPdfShare(pdfBlob, fileName, waText, waNum);
+    showToast('✅ الفاتورة جاهزة للإرسال!');
 
   } catch (e) {
-    console.error(e);
-    showToast('❌ حدث خطأ أثناء تجهيز الفاتورة');
+    console.error('PDF Error:', e);
+    showToast('❌ حدث خطأ أثناء تحضير الفاتورة - جاري التحميل المباشر');
+    // ⚡ fallback: محاولة الطريقة البديلة
+    try {
+      const inv2 = window.appState.invoices[invoiceId];
+      const waText2 = buildInvoiceText(inv2);
+      const waNum2 = '2' + inv2.phone;
+      window.open(`https://wa.me/${waNum2}?text=${encodeURIComponent(waText2)}`, '_blank');
+      showToast('📲 تم فتح الواتساب مع الرسالة');
+    } catch (fallbackErr) {
+      showToast('❌ حدث خطأ في الإرسال');
+    }
+  } finally {
+    window.isGeneratingPDF = false;
   }
 };
 
