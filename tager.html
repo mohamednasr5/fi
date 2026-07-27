@@ -839,24 +839,31 @@
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; top: auto;
       flex-direction: row;
+      flex-wrap: nowrap;
       padding: 4px 0 max(4px, env(safe-area-inset-bottom));
       border-top: 1px solid var(--glass-border);
       border-left: none;
       background: linear-gradient(180deg, rgba(10,22,40,0.97) 0%, rgba(10,22,40,1) 100%);
+      overflow-x: auto;
       overflow-y: visible;
       justify-content: center;
       gap: 2px;
     }
-    .bottom-nav::-webkit-scrollbar { width: 0; }
-    
-    /* Compact touch targets for tablet landscape */
+    .bottom-nav::-webkit-scrollbar { width: 0; height: 0; }
+
+    /* Compact touch targets for tablet landscape
+       ⚡ flex:0 1 auto كان بيخلي المتصفح "يضغط" عرض الزرار لو الصف مزدحم، فالنص/الأيقونة
+       كانت بتفيض بره حدود الزرار الحقيقي، فالضغطة عليهم كانت مش بتسجل (الزراير دي بالذات:
+       القطاعات، الأسعار، الفواتير المدخلة، فروق الأسعار). خليناه flex:0 0 auto عشان
+       كل زرار ياخد حجمه الطبيعي كامل وميضغطش، ولو مش هيسع الصف كله هيبقى فيه سكرول أفقي
+       بسيط بدل ما الزراير تتكسر. */
     .nav-item { 
-      padding: 6px 12px; 
-      min-width: 70px;
-      flex: 0 1 auto;
+      padding: 6px 10px; 
+      min-width: 68px;
+      flex: 0 0 auto;
     }
     .nav-item .nav-icon { font-size: 22px; }
-    .nav-item .nav-label { font-size: 10px; }
+    .nav-item .nav-label { font-size: 10px; white-space: nowrap; }
 
     /* Content uses full width - minimal space above nav */
     .content { 
