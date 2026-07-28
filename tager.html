@@ -2714,24 +2714,40 @@ window.downloadInvoicePDFDirect = async function(invoiceId) {
     const dateStr = (inv.invDateISO || getTodayISO()).replace(/-/g, '');
     const fileName = `فاتورة_${clientName}_${invNum}_${dateStr}.pdf`;
     
+    // بناء HTML الفاتورة بالتصميم المميز
     const pdfHTML = buildInvoicePDFHTML(inv, invoiceId);
     
-    // إنشاء عنصر مؤقت للتحويل
+    // ✅ إنشاء div مخفي داخل نفس المستند (بدل iframe اللي كان بيطلّع صفحة بيضاء)
+    // html2canvas مش بيقدر يحسب الـ styles صح لعنصر جوه مستند (document) تاني زي iframe،
+    // فكان بيطلع Canvas فاضي = PDF صفحة بيضاء. الحل: نحط المحتوى في div جوه المستند الأساسي.
     const tempDiv = document.createElement('div');
     tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;';
     tempDiv.innerHTML = pdfHTML;
     document.body.appendChild(tempDiv);
     
+    // انتظار بسيط لضمان تحميل الخطوط/الأنماط
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     const opt = {
-      margin: [10, 10, 10, 10],
+      margin: 0,
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        letterRendering: true, 
+        logging: false,
+        width: 794,
+        windowWidth: 794
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css', 'legacy'] }
     };
     
-    await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).save();
+    // ✅ تحويل محتوى الـ div مباشرة (نفس المستند الأساسي)
+    await html2pdf().set(opt).from(tempDiv.firstElementChild || tempDiv).save();
+    
+    // تنظيف
     document.body.removeChild(tempDiv);
     
     showToast('✅ تم تنزيل الفاتورة بنجاح!');
@@ -2760,23 +2776,34 @@ window.downloadEnteredInvoicePDFDirect = async function(invoiceId) {
     const clientName = (inv.clientName || 'عميل').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
     const fileName = `فاتورة_مدخلة_${clientName}_${invoiceId.substring(0,8)}.pdf`;
     
-    // بناء HTML الفاتورة المدخلة
-    const pdfHTML = buildEnteredInvoicePDFHTML(inv, invoiceId);
+    // ✅ استخدام نفس التصميم المميز للفواتير المدخلة
+    const pdfHTML = buildInvoicePDFHTML(inv, invoiceId);
     
+    // ✅ إنشاء div مخفي داخل نفس المستند (بدل iframe اللي كان بيطلّع صفحة بيضاء)
     const tempDiv = document.createElement('div');
     tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;';
     tempDiv.innerHTML = pdfHTML;
     document.body.appendChild(tempDiv);
     
+    // انتظار بسيط لضمان تحميل الخطوط/الأنماط
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     const opt = {
-      margin: [10, 10, 10, 10],
+      margin: 0,
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true, 
+        letterRendering: true, 
+        logging: false,
+        width: 794,
+        windowWidth: 794
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).save();
+    await html2pdf().set(opt).from(tempDiv.firstElementChild || tempDiv).save();
     document.body.removeChild(tempDiv);
     
     showToast('✅ تم تنزيل الفاتورة بنجاح!');
