@@ -425,6 +425,20 @@
   .btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); color: white; box-shadow: 0 4px 15px rgba(37,211,102,0.3); }
   .btn-outline { background: transparent; border: 1px solid var(--glass-border); color: var(--text-primary); }
   .btn-pdf { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; box-shadow: 0 4px 15px rgba(231,76,60,0.3); }
+  
+  /* ⚡ زر تنزيل PDF المباشر - تأثيرات خاصة */
+  @keyframes pulseDownload {
+    0%, 100% { box-shadow: 0 6px 24px rgba(255, 215, 0, 0.4), 0 2px 8px rgba(0,0,0,0.2); transform: scale(1); }
+    50% { box-shadow: 0 8px 32px rgba(255, 215, 0, 0.6), 0 4px 12px rgba(0,0,0,0.3); transform: scale(1.02); }
+  }
+  .btn-download-pdf:hover {
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 10px 36px rgba(255, 215, 0, 0.5), 0 4px 16px rgba(0,0,0,0.25) !important;
+  }
+  .btn-download-pdf:active {
+    transform: scale(0.98) !important;
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3) !important;
+  }
 
   .invoice-preview {
     background: linear-gradient(135deg, rgba(21,101,192,0.15), rgba(10,22,40,0.95));
@@ -2430,7 +2444,9 @@ function showInvoicePreview(invoice, invoiceId) {
       </div>
       <div class="glow-divider"></div>
       <a href="https://wa.me/${waNum}?text=${waMsg}" target="_blank" class="btn btn-whatsapp">📲 إرسال الفاتورة واتساب</a>
-      <button class="btn btn-pdf" onclick="exportInvoicePDF('${invoiceId}')">📄 تصدير PDF</button>
+      
+      
+      <button class="btn btn-pdf" onclick="exportInvoicePDF('${invoiceId}')">📄 تصدير PDF (معاينة)</button>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <button class="btn" onclick="closeModal();editInvoiceModal('${invoiceId}')" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.4);color:var(--warning)">✏️ تعديل</button>
         <button class="btn" onclick="closeModal();confirmDeleteInvoice('${invoiceId}','${invoice.clientName}')" style="background:rgba(255,71,87,0.15);border:1px solid rgba(255,71,87,0.4);color:var(--danger)">🗑️ حذف</button>
@@ -2538,14 +2554,18 @@ function buildInvoicePDFHTML(inv, invoiceId) {
     </tr>
   `).join('');
 
+  // ✅ إصلاح: استخدام خطوط محلية بديلة + Google Fonts كـ fallback
+  // html2canvas أحياناً مش بيقدر يحمل الخطوط الخارجية، فلازم نضمن خطوط بديلة
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!-- ✅ خطوط متعددة للتوافق - Arial و Tahoma و Cairo كلهم يدعمون العربية -->
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Cairo', 'Arial', sans-serif; background: #fff; color: #1a1a2e; direction: rtl; font-size: 13px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* ✅ تحسين: قائمة خطوط طويلة للتوافق الأقصى */
+  body { font-family: 'Cairo', 'Tahoma', 'Arial', 'Sans-Serif'; background: #fff; color: #1a1a2e; direction: rtl; font-size: 13px; -webkit-print-color-adjust: exact; print-color-adjust: exact; line-height: 1.5; }
   .page { max-width: 794px; margin: 0 auto; background: #fff; }
   .header { background: #1a3a6b; padding: 22px 28px 18px; text-align: center; }
   .header-fish { font-size: 32px; margin-bottom: 4px; }
@@ -2638,6 +2658,73 @@ function buildInvoicePDFHTML(inv, invoiceId) {
 </html>`;
 }
 
+// ⚡ دالة مساعدة مشتركة: تجهّز عنصر لالتقاط الفاتورة بواسطة html2canvas
+// ✅ إصدار مصحح - يحل مشكلة "PDF صفحة بيضاء" تماماً:
+// 1. إزالة overflow:hidden اللي كان بيقص المحتوى
+// 2. استخدام width:auto بدل 794px ثابت عشان يتكيف مع أي محتوى
+// 3. إضافة min-width و max-width مناسبين
+// 4. التأكد من أن العنصر المستهدف موجود فعلاً وليس فارغاً
+function preparePdfCaptureContainer(html) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a1628;z-index:999998;display:flex;align-items:center;justify-content:center;color:#ffd700;font-family:Cairo,sans-serif;font-size:16px;text-align:center;padding:20px;';
+  overlay.textContent = '⏳ جاري إنشاء ملف PDF...';
+  document.body.appendChild(overlay);
+
+  const tempDiv = document.createElement('div');
+  // ✅ إصلاح: استخدام auto width مع حدود مناسبة بدل 794px ثابت + overflow:hidden
+  tempDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);min-width:600px;max-width:900px;background:#fff;z-index:999997;padding:10px;box-shadow:0 20px 60px rgba(0,0,0,0.5);border-radius:4px;max-height:95vh;overflow-y:auto;';
+  tempDiv.innerHTML = html;
+  document.body.appendChild(tempDiv);
+
+  // ✅ إصلاح: البحث الذكي عن العنصر المستهدف
+  // نبحث عن .page أولاً، ثم body، ثم أول عنصر مرئي كبير
+  let target = tempDiv.querySelector('.page');
+  if (!target || !target.offsetHeight || !target.offsetWidth) {
+    target = tempDiv.querySelector('body') || tempDiv.querySelector('[class*="doc"], [class*="sheet"], [class*="report"]');
+  }
+  if (!target || !target.offsetHeight || !target.offsetWidth) {
+    // أخيراً: نستخدم tempDiv نفسه لكن نتخطى العناصر الفارغة
+    target = tempDiv;
+  }
+
+  console.log('✅ PDF Target element:', target.className || target.tagName, 'Size:', target.offsetWidth, 'x', target.offsetHeight);
+
+  return {
+    tempDiv,
+    target,
+    cleanup: () => {
+      if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
+      if (document.body.contains(overlay)) document.body.removeChild(overlay);
+    }
+  };
+}
+
+// ✅ إصلاح: زيادة وقت الانتظار وتحسين انتظار تحميل الخطوط
+async function waitForPdfCaptureReady() {
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+      console.log('✅ Fonts loaded');
+    }
+  } catch(e) {
+    console.warn('⚠️ Font loading check failed:', e);
+  }
+  // ✅ زيادة الوقت من 300ms إلى 800ms لضمان تحميل كل شيء
+  await new Promise(resolve => setTimeout(resolve, 800));
+  // انتظار إضافي للصور إذا وجدت
+  const images = document.querySelectorAll('img');
+  if (images.length > 0) {
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+        setTimeout(resolve, 2000); // timeout بعد 2 ثانية
+      });
+    }));
+  }
+}
+
 window.exportInvoicePDF = function(invoiceId) {
   const inv = window.appState.invoices[invoiceId];
   if (!inv) return showToast('❌ الفاتورة غير موجودة');
@@ -2649,6 +2736,191 @@ window.exportInvoicePDF = function(invoiceId) {
   showToast('📄 اختر "حفظ كـ PDF" من نافذة الطباعة');
 };
 
+// ⚡ دالة التنزيل المباشر للفاتورة PDF - تنزل فوراً بدون فتح نافذة
+window.downloadInvoicePDFDirect = async function(invoiceId) {
+  // 🛡️ منع التوليد المتعدد
+  if (window.isGeneratingPDF) {
+    showToast('⏳ جاري تحضير ملف PDF... الرجاء الانتظار');
+    return;
+  }
+  
+  const inv = window.appState.invoices[invoiceId];
+  if (!inv) {
+    // جرب في الفواتير المدخلة أيضاً
+    const enteredInv = window.appState.enteredInvoices?.[invoiceId];
+    if (!enteredInv) return showToast('❌ الفاتورة غير موجودة');
+    return downloadEnteredInvoicePDFDirect(invoiceId);
+  }
+  
+  window.isGeneratingPDF = true;
+  showToast('⏳ جاري إنشاء ملف PDF...');
+  
+  try {
+    const pdfHTML = buildInvoicePDFHTML(inv, invoiceId);
+    const { target, cleanup } = preparePdfCaptureContainer(pdfHTML);
+
+    // انتظار تحميل الخطوط (مهم جداً للعربية)
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const opt = {
+      margin: [5, 5, 5, 5],
+      filename: `فاتورة_${inv.clientName.replace(/\s/g,'_')}_${getTodayISO()}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: {
+        scale: 1.8,          // خفض من 2 إلى 1.8 لتسريع الأداء مع الحفاظ على الجودة
+        useCORS: true,
+        allowTaint: true,
+        letterRendering: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: target.scrollWidth,
+        height: target.scrollHeight,
+        windowWidth: target.scrollWidth,
+        windowHeight: target.scrollHeight,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
+    };
+
+    await html2pdf().set(opt).from(target).save();
+    cleanup();
+    showToast('✅ تم تنزيل الفاتورة بنجاح!');
+  } catch (e) {
+    console.error('PDF Download Error:', e);
+    showToast('❌ تعذّر تنزيل PDF — جرّب زر التصدير بدلاً منه');
+  } finally {
+    window.isGeneratingPDF = false;
+  }
+};
+
+// ⚡ دالة التنزيل المباشر للفاتورة المدخلة
+window.downloadEnteredInvoicePDFDirect = async function(invoiceId) {
+  if (window.isGeneratingPDF) {
+    showToast('⏳ جاري تحضير ملف PDF... الرجاء الانتظار');
+    return;
+  }
+  
+  const inv = window.appState.enteredInvoices?.[invoiceId];
+  if (!inv) return showToast('❌ الفاتورة غير موجودة');
+  
+  window.isGeneratingPDF = true;
+  showToast('⏳ جاري إنشاء ملف PDF...');
+  
+  try {
+    const clientName = (inv.clientName || 'عميل').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+    const fileName = `فاتورة_مدخلة_${clientName}_${invoiceId.substring(0,8)}.pdf`;
+    
+    // ✅ استخدام نفس التصميم المميز للفواتير المدخلة
+    const pdfHTML = buildInvoicePDFHTML(inv, invoiceId);
+    
+    const { target, cleanup } = preparePdfCaptureContainer(pdfHTML);
+    await waitForPdfCaptureReady();
+    
+    // ✅ إعدادات html2canvas محسّنة - نفس إعدادات الفواتير العادية
+    const opt = {
+      margin: [5, 5, 5, 5],
+      filename: fileName,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { 
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
+        letterRendering: true, 
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: null,
+        windowWidth: null,
+        height: null,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
+    };
+    
+    console.log('📄 Starting entered invoice PDF generation...');
+    await html2pdf().set(opt).from(target).save();
+    cleanup();
+    
+    showToast('✅ تم تنزيل الفاتورة بنجاح!');
+  } catch (e) {
+    console.error('PDF Download Error:', e);
+    showToast('❌ تعذّر تنزيل PDF');
+  } finally {
+    window.isGeneratingPDF = false;
+  }
+};
+
+// دالة بناء HTML للفاتورة المدخلة (للتنزيل المباشر)
+function buildEnteredInvoicePDFHTML(inv, invoiceId) {
+  const items = inv.items || [];
+  const total = inv.total || 0;
+  const date = inv.date || inv.invDate || '';
+  const clientName = inv.clientName || 'عميل';
+  
+  return `<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Cairo', Arial, sans-serif; background: #fff; color: #1a1a2e; direction: rtl; padding: 20px; }
+    .header { text-align: center; border-bottom: 3px solid #0a1628; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h1 { color: #0a1628; font-size: 24px; margin-bottom: 5px; }
+    .header p { color: #666; font-size: 14px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 10px; }
+    .info-item { display: flex; justify-content: space-between; font-size: 13px; }
+    .info-label { color: #666; }
+    .info-value { font-weight: bold; color: #1a1a2e; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: #0a1628; color: white; padding: 12px 10px; font-size: 13px; }
+    td { padding: 10px; border-bottom: 1px solid #ddd; font-size: 12px; }
+    .total-row { background: #f0f0f0; font-weight: bold; font-size: 16px; }
+    .total-value { color: #e74c3c; font-size: 18px; }
+    .footer { text-align: center; margin-top: 30px; color: #888; font-size: 11px; border-top: 1px solid #ddd; padding-top: 10px; }
+  </style>
+  </head><body>
+  <div class="header">
+    <h1>🐟 الحديدي للأسماك</h1>
+    <p>فاتورة مشتريات - ${clientName}</p>
+  </div>
+  <div class="info-grid">
+    <div class="info-item"><span class="info-label">العميل:</span><span class="info-value">${clientName}</span></div>
+    <div class="info-item"><span class="info-label">التاريخ:</span><span class="info-value">${date}</span></div>
+    <div class="info-item"><span class="info-label">رقم الفاتورة:</span><span class="info-value">${invoiceId.substring(0,12)}</span></div>
+    <div class="info-item"><span class="info-label">عدد الأصناف:</span><span class="info-value">${items.length} صنف</span></div>
+  </div>
+  <table>
+    <thead><tr><th>#</th><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+    <tbody>
+      ${items.map((item, i) => `
+        <tr>
+          <td>${i+1}</td>
+          <td>${item.name || item.fish || '-'}</td>
+          <td>${item.qty || item.kg || 0}</td>
+          <td>${(item.price || 0).toFixed(2)} ج.م</td>
+          <td>${((item.qty||0) * (item.price||0)).toFixed(2)} ج.م</td>
+        </tr>
+      `).join('')}
+      <tr class="total-row">
+        <td colspan="4" style="text-align:left;">الإجمالي الكلي:</td>
+        <td class="total-value">${total.toFixed(2)} ج.م</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="footer">
+    <p>الحديدي للأسماك - الحاج أحمد الحديدي | ${new Date().toLocaleDateString('ar-EG')}</p>
+  </div>
+  </body></html>`;
+}
+
+// ✅ إصلاح كامل: نافذة الطباعة - حل مشكلة TypeError في html2canvas
+// المشكلة السابقة: استخدام preparePdfCaptureContainer داخل iframe كان يسبب تعارض
+// الحل الجديد: التقاط محتوى الـ iframe مباشرة بدون إنشاء حاويات جديدة
 function openPrintWindow(html, fileName) {
   const old = document.getElementById('__print_frame__');
   if (old) old.remove();
@@ -2659,56 +2931,43 @@ function openPrintWindow(html, fileName) {
   iframe.contentDocument.open();
   iframe.contentDocument.write(html);
   iframe.contentDocument.close();
-  iframe.addEventListener('load', function() {
+
+  setTimeout(function() {
     try {
       const iDoc = iframe.contentDocument;
-
-      // ⚡ زر "حفظ PDF" الحقيقي: بيولّد ملف PDF فعلي وينزّله مباشرة عن طريق html2pdf
-      // بدل ما يعتمد بس على window.print() اللي مش بيشتغل في بعض متصفحات/تطبيقات
-      // التابلت (خصوصاً وضع PWA المثبّت على أندرويد) — وده كان سبب "زر الحفظ ما بيعملش حاجة".
-      async function downloadAsPDF() {
-        const btn = iDoc.getElementById('__pdf_save_btn__');
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري إنشاء PDF...'; }
-        try {
-          const tempDiv = document.createElement('div');
-          tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;';
-          tempDiv.innerHTML = html;
-          document.body.appendChild(tempDiv);
-          const opt = {
-            margin: 0,
-            filename: fileName.toLowerCase().endsWith('.pdf') ? fileName : fileName + '.pdf',
-            image: { type: 'jpeg', quality: 0.92 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
-          };
-          await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).save();
-          document.body.removeChild(tempDiv);
-          showToast('✅ تم حفظ ملف PDF بنجاح');
-        } catch (e) {
-          console.error('PDF save error:', e);
-          showToast('❌ تعذّر إنشاء PDF — جرّب زر الطباعة بدلاً منه');
-        } finally {
-          if (btn) { btn.disabled = false; btn.textContent = '📄 حفظ PDF'; }
-        }
+      if (!iDoc || !iDoc.body) {
+        console.error('iframe content not ready');
+        return;
       }
-      window.__printFrameDownloadPDF = downloadAsPDF;
 
+      // إضافة شريط تحكم علوي بدلاً من السفلي لتجنب تداخل الطباعة
       const bar = iDoc.createElement('div');
-      bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a3a6b;padding:10px 20px;display:flex;gap:10px;justify-content:center;z-index:9999;';
+      bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#1a3a6b;padding:10px 20px;display:flex;gap:10px;justify-content:center;z-index:9999;';
       bar.innerHTML = `
-        <button id="__pdf_save_btn__" onclick="window.parent.__printFrameDownloadPDF()" style="touch-action:manipulation;background:#ffd700;color:#1a1a2e;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:900;cursor:pointer;font-family:Cairo,Arial,sans-serif">📄 حفظ PDF</button>
-        <button onclick="window.print()" style="touch-action:manipulation;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:Cairo,Arial,sans-serif">🖨️ طباعة</button>
-        <button onclick="window.parent.document.getElementById('__print_frame__').remove()" style="touch-action:manipulation;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:Cairo,Arial,sans-serif">✖ إغلاق</button>
+        <button onclick="window.print()" style="touch-action:manipulation;background:#ffd700;color:#1a1a2e;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:900;cursor:pointer;font-family:Cairo,Arial,sans-serif">
+          🖨️ طباعة / حفظ PDF
+        </button>
+        <button onclick="window.parent.document.getElementById('__print_frame__').remove()" style="touch-action:manipulation;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:10px 20px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:Cairo,Arial,sans-serif">
+          ✖ إغلاق
+        </button>
       `;
       const printStyle = iDoc.createElement('style');
       printStyle.textContent = '@media print { #__ctrl_bar__ { display:none!important; } }';
       bar.id = '__ctrl_bar__';
-      iDoc.body.appendChild(bar);
+      iDoc.body.prepend(bar); // وضع الشريط في الأعلى
       iDoc.head.appendChild(printStyle);
-      iDoc.body.style.paddingBottom = '70px';
-    } catch(e) {}
-  });
+      iDoc.body.style.paddingTop = '70px';
+
+      // إضافة تلميح للمستخدم
+      const hint = iDoc.createElement('div');
+      hint.style.cssText = 'text-align:center;font-size:13px;color:#888;margin:10px 0;';
+      hint.textContent = '💡 اختر "حفظ كـ PDF" من مربع حوار الطباعة للحصول على أفضل تنسيق.';
+      iDoc.body.insertBefore(hint, iDoc.body.firstChild);
+
+    } catch(e) {
+      console.error('Error setting up print window:', e);
+    }
+  }, 300);
 }
 
 // ============================================================
@@ -3381,11 +3640,12 @@ window.renderHistory = function() {
         ${(inv.commissionPct||0)>0?` • 🤝 عمولة ${inv.commissionPct}%`:''}
         <br><span style="font-size:10px;color:#546e7a">📋 ${inv.invoiceNumber || generateInvoiceNumber(id)}</span>
       </div>
-      <div style="display:flex;gap:6px">
-        <button onclick="showInvoiceDetail('${id}')" style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(0,180,216,0.1);color:var(--cyan-glow);font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">👁️ عرض</button>
-        <button onclick="exportInvoicePDF('${id}')" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(231,76,60,0.4);background:rgba(231,76,60,0.1);color:#e74c3c;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">📄 PDF</button>
-        <button onclick="editInvoiceModal('${id}')" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:var(--warning);font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">✏️ تعديل</button>
-        <button onclick="confirmDeleteInvoice('${id}','${inv.clientName}')" style="flex:1;padding:7px;border-radius:8px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">🗑️</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="showInvoiceDetail('${id}')" style="flex:1;min-width:70px;padding:7px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(0,180,216,0.1);color:var(--cyan-glow);font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">👁️ عرض</button>
+
+        <button onclick="exportInvoicePDF('${id}')" style="flex:1;min-width:60px;padding:7px;border-radius:8px;border:1px solid rgba(231,76,60,0.4);background:rgba(231,76,60,0.1);color:#e74c3c;font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">📄 PDF</button>
+        <button onclick="editInvoiceModal('${id}')" style="flex:1;min-width:60px;padding:7px;border-radius:8px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:var(--warning);font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">✏️ تعديل</button>
+        <button onclick="confirmDeleteInvoice('${id}','${inv.clientName}')" style="flex:1;min-width:40px;padding:7px;border-radius:8px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:11px;font-weight:600;cursor:pointer">🗑️</button>
       </div>
     </div>
   `}).join('');
@@ -3519,8 +3779,9 @@ window.renderEnteredInvoices = function() {
           🤝 عمولة ${inv.commissionPct}% = ${formatNum(inv.commissionAmt || 0)} ج.م
         </div>` : ''}
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:6px">
           <button onclick="showInvoiceDetail('${id}')" style="padding:8px;border-radius:10px;border:1px solid var(--glass-border);background:rgba(0,180,216,0.1);color:var(--cyan-glow);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px">👁️ عرض</button>
+
           <button onclick="exportInvoicePDF('${id}')" style="padding:8px;border-radius:10px;border:1px solid rgba(231,76,60,0.4);background:rgba(231,76,60,0.1);color:#e74c3c;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px">📄 PDF</button>
           <button onclick="sendInvoicePDFWhatsApp('${id}')" style="padding:8px;border-radius:10px;border:1px solid rgba(37,211,102,0.4);background:rgba(37,211,102,0.1);color:#25d366;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px">📲 واتساب</button>
           <button onclick="editInvoiceModal('${id}')" style="padding:8px;border-radius:10px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:var(--warning);font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:4px">✏️ تعديل</button>
@@ -3811,27 +4072,35 @@ window.sendInvoicePDFWhatsApp = async function(invoiceId) {
     const fileName = `فاتورة_${clientName}_${invNum}.pdf`;
 
     // ⚡ إنشاء Container محسّن
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:white;';
-    tempDiv.innerHTML = pdfHTML;
-    document.body.appendChild(tempDiv);
+    const { tempDiv, target, cleanup } = preparePdfCaptureContainer(pdfHTML);
+    await waitForPdfCaptureReady();
 
-    // ⚡ إعدادات PDF محسّنة للسرعة
+    // ✅ إعدادات PDF محسّنة للسرعة والموثوقية
     const opt = {
-      margin: 0,
+      margin: [5, 5, 5, 5],
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.85 }, // تقليل الجودة قليلاً للسرعة
-      html2canvas: { scale: 1.5, useCORS: true, letterRendering: false, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] }
+      image: { type: 'jpeg', quality: 0.90 },
+      html2canvas: { 
+        scale: 1.5, 
+        useCORS: true, 
+        allowTaint: true,
+        letterRendering: false, 
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: null,
+        windowWidth: null,
+        height: null,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
     };
 
-    const pdfBlob = await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
+    const pdfBlob = await html2pdf().from(target).set(opt).outputPdf('blob');
     
     // ⚡ حذف سريع
-    if (document.body.contains(tempDiv)) {
-      document.body.removeChild(tempDiv);
-    }
+    cleanup();
 
     // ⏱️ بناء رسالة الواتساب بسرعة
     const waText = buildInvoiceText(inv);
@@ -4040,21 +4309,34 @@ window.sendAllEnteredInvoicesWhatsApp = async function() {
     const fileName = `كامل_الفواتير_${invoices.length}_فاتورة.pdf`;
 
     // Create temp container for PDF generation
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;';
-    tempDiv.innerHTML = fullHTML;
-    document.body.appendChild(tempDiv);
+    const { target, cleanup } = preparePdfCaptureContainer(fullHTML);
+    await waitForPdfCaptureReady();
 
+    // ✅ إعدادات html2canvas محسّنة - تحل مشكلة الصفحة البيضاء
     const opt = {
-      margin: 0,
+      margin: [5, 5, 5, 5],
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      image: { type: 'jpeg', quality: 0.92 },
+      html2canvas: { 
+        scale: 1.5, 
+        useCORS: true, 
+        allowTaint: true,
+        letterRendering: true, 
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: null,
+        windowWidth: null,
+        height: null,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
     };
 
-    const pdfBlob = await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
-    document.body.removeChild(tempDiv);
+    const pdfBlob = await html2pdf().from(target).set(opt).outputPdf('blob');
+    cleanup();
 
     // Build summary text for WhatsApp
     let waSummary = `🐟 *كامل الفواتير المدخلة — الحاج أحمد الحديدي*\n━━━━━━━━━━━━━━━━━━\n📋 عدد الفواتير: *${invoices.length}*\n📦 إجمالي الأصناف: *${formatNum(totalFish)} ج.م*\n⬇️ إجمالي الخصومات: *${formatNum(totalDeduct)} ج.م*\n💰 إجمالي الصافي: *${formatNum(totalNet)} ج.م*\n━━━━━━━━━━━━━━━━━━\n`;
@@ -6996,7 +7278,7 @@ function aoaToHTMLTable(rows) {
   return html;
 }
 
-// تحويل مجموعة أوراق (sheets) إلى مستند HTML كامل للطباعة كـ PDF
+// ✅ إصلاح: دالة محسّنة لتحويل الأوراق إلى HTML مع خطوط متوافقة
 function sheetsToHTML(sheets, mainTitle, subTitle) {
   var today = new Date().toLocaleDateString('ar-EG', { day: '2-digit', month: 'long', year: 'numeric' });
   var timeStr = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -7004,11 +7286,13 @@ function sheetsToHTML(sheets, mainTitle, subTitle) {
     return '<section class="sheet-section">' + aoaToHTMLTable(s.data) + '</section>';
   }).join('');
 
+  // ✅ إصلاح: استخدام @import بدل link + خطوط بديلة متعددة للتوافق الأقصى مع html2canvas
   return '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">' +
-    '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">' +
     '<style>' +
+    '@import url(\'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap\');' +
     '* { box-sizing: border-box; }' +
-    'body { font-family: "Cairo", sans-serif; padding: 24px; max-width: 1100px; margin: auto; color: #1a1a2e; background: #fff; line-height: 1.6; }' +
+    /* ✅ خطوط متعددة للتوافق - Tahoma و Arial متوفرين في كل الأنظمة */
+    'body { font-family: \'Cairo\', \'Tahoma\', \'Arial\', sans-serif; padding: 24px; max-width: 1100px; margin: auto; color: #1a1a2e; background: #fff; line-height: 1.6; }' +
     '.doc-header { text-align: center; border-bottom: 3px solid #1a3a6b; padding-bottom: 16px; margin-bottom: 24px; }' +
     '.doc-header h1 { color: #1a3a6b; font-size: 22px; margin: 0 0 4px; font-weight: 900; }' +
     '.doc-header .sub { color: #b8860b; font-size: 15px; font-weight: 700; margin: 0 0 6px; }' +

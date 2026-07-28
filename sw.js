@@ -5,9 +5,9 @@
    - Network-first for API calls
    =========================================================== */
 
-const CACHE_NAME = 'fish-home-v3.0-pro';
-const STATIC_CACHE = 'fish-home-static-v3';
-const DYNAMIC_CACHE = 'fish-home-dynamic-v3';
+const CACHE_NAME = 'fish-home-v3.1-pro';
+const STATIC_CACHE = 'fish-home-static-v3.1';
+const DYNAMIC_CACHE = 'fish-home-dynamic-v3.1';
 
 // Assets to cache on install
 const ASSETS_TO_CACHE = [
