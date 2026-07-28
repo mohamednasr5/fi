@@ -2946,6 +2946,9 @@ function buildEnteredInvoicePDFHTML(inv, invoiceId) {
   </body></html>`;
 }
 
+// ✅ إصلاح كامل: نافذة الطباعة - حل مشكلة TypeError في html2canvas
+// المشكلة السابقة: استخدام preparePdfCaptureContainer داخل iframe كان يسبب تعارض
+// الحل الجديد: التقاط محتوى الـ iframe مباشرة بدون إنشاء حاويات جديدة
 function openPrintWindow(html, fileName) {
   const old = document.getElementById('__print_frame__');
   if (old) old.remove();
@@ -2956,21 +2959,37 @@ function openPrintWindow(html, fileName) {
   iframe.contentDocument.open();
   iframe.contentDocument.write(html);
   iframe.contentDocument.close();
-  iframe.addEventListener('load', function() {
+  
+  // ✅ استخدام setTimeout لضمان تحميل المحتوى بالكامل
+  setTimeout(function() {
     try {
       const iDoc = iframe.contentDocument;
+      if (!iDoc || !iDoc.body) {
+        console.error('❌ iframe content not ready');
+        return;
+      }
 
-      // ⚡ زر "حفظ PDF" الحقيقي: بيولّد ملف PDF فعلي وينزّله مباشرة عن طريق html2pdf
-      // بدل ما يعتمد بس على window.print() اللي مش بيشتغل في بعض متصفحات/تطبيقات
-      // التابلت (خصوصاً وضع PWA المثبّت على أندرويد) — وده كان سبب "زر الحفظ ما بيعملش حاجة".
-      // ✅ إصلاح: دالة حفظ PDF من نافذة الطباعة - إعدادات محسّنة
+      // ✅ إصلاح: دالة حفظ PDF - تلتقط محتوى الـ iframe مباشرة
       async function downloadAsPDF() {
         const btn = iDoc.getElementById('__pdf_save_btn__');
         if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري إنشاء PDF...'; }
         try {
-          const { target, cleanup } = preparePdfCaptureContainer(html);
-          await waitForPdfCaptureReady();
-          // ✅ إعدادات html2canvas محسّنة - نفس الإعدادات الجديدة
+          // ✅ الحل الصحيح: نستخدم body الـ iframe نفسه كمصدر
+          // بدل ما ننشئ حاوية جديدة (كانت سبب الخطأ)
+          let target = iDoc.body;
+          
+          // ✅ إذا فيه عنصر .page، نستخدمه
+          const pageEl = iDoc.querySelector('.page') || iDoc.querySelector('[class*="doc-header"]')?.parentElement;
+          if (pageEl && pageEl.offsetHeight > 0 && pageEl.offsetWidth > 0) {
+            target = pageEl;
+          }
+          
+          console.log('✅ Print Window PDF Target:', target.tagName, target.className, 'Size:', target.offsetWidth, 'x', target.offsetHeight);
+          
+          // ✅ انتظار تحميل الخطوط والصور في الـ iframe
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // ✅ إعدادات محسّنة - تعمل مع عناصر الـ iframe مباشرة
           const opt = {
             margin: [5, 5, 5, 5],
             filename: fileName.toLowerCase().endsWith('.pdf') ? fileName : fileName + '.pdf',
@@ -2982,23 +3001,40 @@ function openPrintWindow(html, fileName) {
               letterRendering: true,
               logging: false,
               backgroundColor: '#ffffff',
-              width: null,
-              windowWidth: null,
-              height: null,
+              // ✅ مهم: عدم تحديد width/height - يأخذها من العنصر تلقائياً
               scrollX: 0,
-              scrollY: 0,
-              removeContainer: false
+              scrollY: 0
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
             pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
           };
+          
           console.log('📄 Starting print window PDF generation...');
-          await html2pdf().from(target).set(opt).save();
-          cleanup();
+          await html2pdf().set(opt).from(target).save();
           showToast('✅ تم حفظ ملف PDF بنجاح');
         } catch (e) {
           console.error('PDF save error:', e);
-          showToast('❌ تعذّر إنشاء PDF — جرّب زر الطباعة بدلاً منه');
+          // ✅ fallback: محاولة بطريقة بديلة
+          try {
+            console.log('🔄 Trying alternative PDF method...');
+            const opt2 = {
+              margin: 10,
+              filename: fileName + '.pdf',
+              image: { type: 'jpeg', quality: 0.90 },
+              html2canvas: { 
+                scale: 1,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+              },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            await html2pdf().set(opt2).from(iDoc.body).save();
+            showToast('✅ تم حفظ ملف PDF بنجاح (طريقة بديلة)');
+          } catch (e2) {
+            console.error('Alternative method also failed:', e2);
+            showToast('❌ تعذّر إنشاء PDF — جرّب زر الطباعة بدلاً منه');
+          }
         } finally {
           if (btn) { btn.disabled = false; btn.textContent = '📄 حفظ PDF'; }
         }
@@ -3018,8 +3054,10 @@ function openPrintWindow(html, fileName) {
       iDoc.body.appendChild(bar);
       iDoc.head.appendChild(printStyle);
       iDoc.body.style.paddingBottom = '70px';
-    } catch(e) {}
-  });
+    } catch(e) {
+      console.error('Error setting up print window:', e);
+    }
+  }, 300); // ✅ تأخير 300ms لضمان تحميل المحتوى
 }
 
 // ============================================================
