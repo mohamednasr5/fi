@@ -105,15 +105,30 @@
     border-top: 1px solid var(--glass-border);
     display: flex; padding: 8px 0 max(8px, env(safe-area-inset-bottom));
   }
+  /* ✨ شريط التنقل المحسن - أيقونات أكبر ومنطقة ضغط أسهل */
   .nav-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    cursor: pointer; padding: 6px 4px; transition: all 0.3s; border: none; background: none;
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer; padding: 10px 6px; transition: all 0.2s ease; border: none; background: none;
     color: var(--text-secondary); font-family: 'Cairo', sans-serif;
+    position: relative; min-height: 56px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0, 208, 216, 0.3);
+  }
+  .nav-item::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 12px;
+    background: transparent;
+    transition: background 0.2s ease;
+  }
+  .nav-item:active::before {
+    background: rgba(0, 208, 216, 0.15);
   }
   .nav-item.active { color: var(--cyan-glow); }
-  .nav-item .nav-icon { font-size: 22px; transition: transform 0.3s; }
-  .nav-item.active .nav-icon { transform: translateY(-4px) scale(1.15); filter: drop-shadow(0 0 8px var(--cyan-glow)); }
-  .nav-item .nav-label { font-size: 10px; font-weight: 600; }
+  .nav-item .nav-icon { font-size: 28px; transition: transform 0.2s ease; line-height: 1; display: flex; align-items: center; justify-content: center; }
+  .nav-item.active .nav-icon { transform: translateY(-3px) scale(1.1); filter: drop-shadow(0 0 10px var(--cyan-glow)); }
+  .nav-item .nav-label { font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
 
   /* Entered invoice card hover effect */
   .entered-invoice-card:active { transform: scale(0.98); }
@@ -851,19 +866,21 @@
     }
     .bottom-nav::-webkit-scrollbar { width: 0; height: 0; }
 
-    /* Compact touch targets for tablet landscape
-       ⚡ flex:0 1 auto كان بيخلي المتصفح "يضغط" عرض الزرار لو الصف مزدحم، فالنص/الأيقونة
-       كانت بتفيض بره حدود الزرار الحقيقي، فالضغطة عليهم كانت مش بتسجل (الزراير دي بالذات:
-       القطاعات، الأسعار، الفواتير المدخلة، فروق الأسعار). خليناه flex:0 0 auto عشان
-       كل زرار ياخد حجمه الطبيعي كامل وميضغطش، ولو مش هيسع الصف كله هيبقى فيه سكرول أفقي
-       بسيط بدل ما الزراير تتكسر. */
+    /* ✨ تحسينات التابلت الأفقي - أيقونات أكبر ومنطقة ضغط أسهل */
     .nav-item { 
-      padding: 6px 10px; 
-      min-width: 68px;
+      padding: 12px 14px; 
+      min-width: 80px;
+      min-height: 64px;
       flex: 0 0 auto;
+      gap: 8px;
+      border-radius: 12px;
+      margin: 0 2px;
     }
-    .nav-item .nav-icon { font-size: 22px; }
-    .nav-item .nav-label { font-size: 10px; white-space: nowrap; }
+    .nav-item:hover {
+      background: rgba(0, 208, 216, 0.08);
+    }
+    .nav-item .nav-icon { font-size: 28px; }
+    .nav-item .nav-label { font-size: 12px; white-space: nowrap; font-weight: 700; }
 
     /* Content uses full width - minimal space above nav */
     .content { 
@@ -885,9 +902,10 @@
 
   /* Portrait tablet — keep bottom nav but make it more spacious */
   @media (min-width: 600px) and (max-width: 899px) {
-    .bottom-nav { max-width: 560px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; margin: 0 auto; }
-    .nav-item .nav-label { font-size: 11px; }
-    .nav-item .nav-icon { font-size: 24px; }
+    .bottom-nav { max-width: 560px; left: 50%; transform: translateX(-50%); border-radius: 20px 20px 0 0; margin: 0 auto; padding: 10px 0; }
+    .nav-item { padding: 12px 8px; min-height: 60px; }
+    .nav-item .nav-label { font-size: 13px; }
+    .nav-item .nav-icon { font-size: 30px; }
     .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
     .content { max-width: 720px; margin: 0 auto; }
   }
@@ -6563,18 +6581,30 @@ window.confirmDeleteClient = function(clientKey, clientName) {
   // ----- beforeinstallprompt: show professional bar -----
   let deferredPrompt = null;
   let installDismissed = sessionStorage.getItem('pwa-install-dismissed') === '1';
+  // ✅ تحقق إضافي: لا تظهر الرسالة إذا تم رفضها اليوم
+  const today = new Date().toDateString();
+  const dismissedToday = localStorage.getItem('pwa-install-dismissed-date') === today;
+  let userInteracted = false;
+
+  // تتبع تفاعل المستخدم - لا تظهر الرسالة إذا كان المستخدم يضغط على الأيقونات
+  document.addEventListener('touchstart', () => { userInteracted = true; }, { passive: true });
+  document.addEventListener('click', () => { userInteracted = true; }, { passive: true });
 
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     window.appState.deferredPrompt = e;
-    // Don't show if user dismissed recently, or if already installed
-    if (installDismissed || window.isStandalone) return;
+    // Don't show if user dismissed recently, or if already installed, or if dismissed today
+    if (installDismissed || window.isStandalone || dismissedToday) return;
     
-    // Show install bar with animation
+    // Show install bar with longer delay and only if user hasn't interacted
     setTimeout(() => {
-      if (installBar) installBar.classList.add('visible');
-    }, 1500);
+      // ✅ لا تظهر إذا كان المستخدم يتفاعل مع الصفحة (يضغط على أيقونات)
+      if (userInteracted) return;
+      if (installBar && !installBar.classList.contains('dismissed')) {
+        installBar.classList.add('visible');
+      }
+    }, 5000); // ✅ زاد الوقت إلى 5 ثواني
   });
 
   // Listen for successful installation
@@ -6647,6 +6677,8 @@ window.confirmDeleteClient = function(clientKey, clientName) {
     }
     installDismissed = true;
     sessionStorage.setItem('pwa-install-dismissed', '1');
+    // ✅ حفظ تاريخ الرفض لعدم الظهور مرة أخرى اليوم
+    localStorage.setItem('pwa-install-dismissed-date', today);
   });
 
   // ----- Install button click handler -----
