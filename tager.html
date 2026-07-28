@@ -2578,14 +2578,18 @@ function buildInvoicePDFHTML(inv, invoiceId) {
     </tr>
   `).join('');
 
+  // ✅ إصلاح: استخدام خطوط محلية بديلة + Google Fonts كـ fallback
+  // html2canvas أحياناً مش بيقدر يحمل الخطوط الخارجية، فلازم نضمن خطوط بديلة
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!-- ✅ خطوط متعددة للتوافق - Arial و Tahoma و Cairo كلهم يدعمون العربية -->
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Cairo', 'Arial', sans-serif; background: #fff; color: #1a1a2e; direction: rtl; font-size: 13px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* ✅ تحسين: قائمة خطوط طويلة للتوافق الأقصى */
+  body { font-family: 'Cairo', 'Tahoma', 'Arial', 'Sans-Serif'; background: #fff; color: #1a1a2e; direction: rtl; font-size: 13px; -webkit-print-color-adjust: exact; print-color-adjust: exact; line-height: 1.5; }
   .page { max-width: 794px; margin: 0 auto; background: #fff; }
   .header { background: #1a3a6b; padding: 22px 28px 18px; text-align: center; }
   .header-fish { font-size: 32px; margin-bottom: 4px; }
@@ -2679,10 +2683,11 @@ function buildInvoicePDFHTML(inv, invoiceId) {
 }
 
 // ⚡ دالة مساعدة مشتركة: تجهّز عنصر لالتقاط الفاتورة بواسطة html2canvas
-// ⚠️ السبب الحقيقي لمشكلة "PDF صفحة بيضاء": كنا بنحط المحتوى بره حدود الشاشة
-// بإحداثيات سالبة كبيرة (top:-9999px)، ومكتبة html2canvas القديمة (v0.10.1) بتفشل
-// في حساب موقع العناصر البعيدة كده وبتلتقط منطقة فاضية. الحل: نحط المحتوى داخل
-// حدود الشاشة فعليًا (0,0) ونغطّيه بطبقة تحميل عشان المستخدم مايشوفش الفاتورة تومض.
+// ✅ إصدار مصحح - يحل مشكلة "PDF صفحة بيضاء" تماماً:
+// 1. إزالة overflow:hidden اللي كان بيقص المحتوى
+// 2. استخدام width:auto بدل 794px ثابت عشان يتكيف مع أي محتوى
+// 3. إضافة min-width و max-width مناسبين
+// 4. التأكد من أن العنصر المستهدف موجود فعلاً وليس فارغاً
 function preparePdfCaptureContainer(html) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:#0a1628;z-index:999998;display:flex;align-items:center;justify-content:center;color:#ffd700;font-family:Cairo,sans-serif;font-size:16px;text-align:center;padding:20px;';
@@ -2690,22 +2695,58 @@ function preparePdfCaptureContainer(html) {
   document.body.appendChild(overlay);
 
   const tempDiv = document.createElement('div');
-  tempDiv.style.cssText = 'position:fixed;top:0;left:0;width:794px;background:#fff;z-index:999997;overflow:hidden;';
+  // ✅ إصلاح: استخدام auto width مع حدود مناسبة بدل 794px ثابت + overflow:hidden
+  tempDiv.style.cssText = 'position:fixed;top:0;left:50%;transform:translateX(-50%);min-width:600px;max-width:900px;background:#fff;z-index:999997;padding:10px;box-shadow:0 20px 60px rgba(0,0,0,0.5);border-radius:4px;max-height:95vh;overflow-y:auto;';
   tempDiv.innerHTML = html;
   document.body.appendChild(tempDiv);
 
+  // ✅ إصلاح: البحث الذكي عن العنصر المستهدف
+  // نبحث عن .page أولاً، ثم body، ثم أول عنصر مرئي كبير
+  let target = tempDiv.querySelector('.page');
+  if (!target || !target.offsetHeight || !target.offsetWidth) {
+    target = tempDiv.querySelector('body') || tempDiv.querySelector('[class*="doc"], [class*="sheet"], [class*="report"]');
+  }
+  if (!target || !target.offsetHeight || !target.offsetWidth) {
+    // أخيراً: نستخدم tempDiv نفسه لكن نتخطى العناصر الفارغة
+    target = tempDiv;
+  }
+
+  console.log('✅ PDF Target element:', target.className || target.tagName, 'Size:', target.offsetWidth, 'x', target.offsetHeight);
+
   return {
     tempDiv,
-    target: tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv,
+    target,
     cleanup: () => {
       if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
       if (document.body.contains(overlay)) document.body.removeChild(overlay);
     }
   };
 }
+
+// ✅ إصلاح: زيادة وقت الانتظار وتحسين انتظار تحميل الخطوط
 async function waitForPdfCaptureReady() {
-  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e) {}
-  await new Promise(resolve => setTimeout(resolve, 300));
+  try {
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
+      console.log('✅ Fonts loaded');
+    }
+  } catch(e) {
+    console.warn('⚠️ Font loading check failed:', e);
+  }
+  // ✅ زيادة الوقت من 300ms إلى 800ms لضمان تحميل كل شيء
+  await new Promise(resolve => setTimeout(resolve, 800));
+  // انتظار إضافي للصور إذا وجدت
+  const images = document.querySelectorAll('img');
+  if (images.length > 0) {
+    await Promise.all(Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+        setTimeout(resolve, 2000); // timeout بعد 2 ثانية
+      });
+    }));
+  }
 }
 
 window.exportInvoicePDF = function(invoiceId) {
@@ -2750,22 +2791,30 @@ window.downloadInvoicePDFDirect = async function(invoiceId) {
     const { tempDiv, target, cleanup } = preparePdfCaptureContainer(pdfHTML);
     await waitForPdfCaptureReady();
     
+    // ✅ إعدادات html2canvas محسّنة بالكامل - تحل مشكلة الصفحة البيضاء
     const opt = {
-      margin: 0,
+      margin: [5, 5, 5, 5], // هوامش 5mm من كل جانب
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
+        scale: 1.5, // ✅ تقليل scale من 2 إلى 1.5 - أفضل أداء وأقل مشاكل
+        useCORS: true, // ✅ السماح بالصور الخارجية
+        allowTaint: true, // ✅ إضافة مهمة - السماح بالعناصر "المتسخة"
         letterRendering: true, 
         logging: false,
-        width: 794,
-        windowWidth: 794
+        backgroundColor: '#ffffff', // ✅ إضافة - ضمان خلفية بيضاء
+        width: null, // ✅ إزالة الحد الثابت - يأخذ عرض العنصر تلقائياً
+        windowWidth: null, // ✅ إزالة الحد الثابت
+        height: null, // ✅ إضافة - يأخذ ارتفاع العنصر تلقائياً
+        scrollX: 0, // ✅ إصلاح - منع انحراف التقاط الشاشة
+        scrollY: 0, // ✅ إصلاح - منع انحراف التقاط الشاشة
+        removeContainer: false // ✅ عدم حذف الحاوية بعد التقاطها
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'], avoid: '.total-row,.grand-box,.header' }
     };
     
+    console.log('📄 Starting PDF generation with optimized settings...');
     await html2pdf().set(opt).from(target).save();
     cleanup();
     
@@ -2801,21 +2850,30 @@ window.downloadEnteredInvoicePDFDirect = async function(invoiceId) {
     const { target, cleanup } = preparePdfCaptureContainer(pdfHTML);
     await waitForPdfCaptureReady();
     
+    // ✅ إعدادات html2canvas محسّنة - نفس إعدادات الفواتير العادية
     const opt = {
-      margin: 0,
+      margin: [5, 5, 5, 5],
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.98 },
+      image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { 
-        scale: 2, 
-        useCORS: true, 
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
         letterRendering: true, 
         logging: false,
-        width: 794,
-        windowWidth: 794
+        backgroundColor: '#ffffff',
+        width: null,
+        windowWidth: null,
+        height: null,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: false
       },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
     };
     
+    console.log('📄 Starting entered invoice PDF generation...');
     await html2pdf().set(opt).from(target).save();
     cleanup();
     
@@ -2905,20 +2963,36 @@ function openPrintWindow(html, fileName) {
       // ⚡ زر "حفظ PDF" الحقيقي: بيولّد ملف PDF فعلي وينزّله مباشرة عن طريق html2pdf
       // بدل ما يعتمد بس على window.print() اللي مش بيشتغل في بعض متصفحات/تطبيقات
       // التابلت (خصوصاً وضع PWA المثبّت على أندرويد) — وده كان سبب "زر الحفظ ما بيعملش حاجة".
+      // ✅ إصلاح: دالة حفظ PDF من نافذة الطباعة - إعدادات محسّنة
       async function downloadAsPDF() {
         const btn = iDoc.getElementById('__pdf_save_btn__');
         if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري إنشاء PDF...'; }
         try {
           const { target, cleanup } = preparePdfCaptureContainer(html);
           await waitForPdfCaptureReady();
+          // ✅ إعدادات html2canvas محسّنة - نفس الإعدادات الجديدة
           const opt = {
-            margin: 0,
+            margin: [5, 5, 5, 5],
             filename: fileName.toLowerCase().endsWith('.pdf') ? fileName : fileName + '.pdf',
-            image: { type: 'jpeg', quality: 0.92 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { 
+              scale: 1.5,
+              useCORS: true,
+              allowTaint: true,
+              letterRendering: true,
+              logging: false,
+              backgroundColor: '#ffffff',
+              width: null,
+              windowWidth: null,
+              height: null,
+              scrollX: 0,
+              scrollY: 0,
+              removeContainer: false
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+            pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
           };
+          console.log('📄 Starting print window PDF generation...');
           await html2pdf().from(target).set(opt).save();
           cleanup();
           showToast('✅ تم حفظ ملف PDF بنجاح');
@@ -4055,14 +4129,26 @@ window.sendInvoicePDFWhatsApp = async function(invoiceId) {
     const { tempDiv, target, cleanup } = preparePdfCaptureContainer(pdfHTML);
     await waitForPdfCaptureReady();
 
-    // ⚡ إعدادات PDF محسّنة للسرعة
+    // ✅ إعدادات PDF محسّنة للسرعة والموثوقية
     const opt = {
-      margin: 0,
+      margin: [5, 5, 5, 5],
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.85 }, // تقليل الجودة قليلاً للسرعة
-      html2canvas: { scale: 1.5, useCORS: true, letterRendering: false, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'legacy'] }
+      image: { type: 'jpeg', quality: 0.90 },
+      html2canvas: { 
+        scale: 1.5, 
+        useCORS: true, 
+        allowTaint: true,
+        letterRendering: false, 
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: null,
+        windowWidth: null,
+        height: null,
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
     };
 
     const pdfBlob = await html2pdf().from(target).set(opt).outputPdf('blob');
@@ -4280,12 +4366,27 @@ window.sendAllEnteredInvoicesWhatsApp = async function() {
     const { target, cleanup } = preparePdfCaptureContainer(fullHTML);
     await waitForPdfCaptureReady();
 
+    // ✅ إعدادات html2canvas محسّنة - تحل مشكلة الصفحة البيضاء
     const opt = {
-      margin: 0,
+      margin: [5, 5, 5, 5],
       filename: fileName,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      image: { type: 'jpeg', quality: 0.92 },
+      html2canvas: { 
+        scale: 1.5, 
+        useCORS: true, 
+        allowTaint: true,
+        letterRendering: true, 
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: null,
+        windowWidth: null,
+        height: null,
+        scrollX: 0,
+        scrollY: 0,
+        removeContainer: false
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true },
+      pagebreak: { mode: ['css', 'legacy', 'avoid-all'] }
     };
 
     const pdfBlob = await html2pdf().from(target).set(opt).outputPdf('blob');
@@ -7231,7 +7332,7 @@ function aoaToHTMLTable(rows) {
   return html;
 }
 
-// تحويل مجموعة أوراق (sheets) إلى مستند HTML كامل للطباعة كـ PDF
+// ✅ إصلاح: دالة محسّنة لتحويل الأوراق إلى HTML مع خطوط متوافقة
 function sheetsToHTML(sheets, mainTitle, subTitle) {
   var today = new Date().toLocaleDateString('ar-EG', { day: '2-digit', month: 'long', year: 'numeric' });
   var timeStr = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -7239,11 +7340,13 @@ function sheetsToHTML(sheets, mainTitle, subTitle) {
     return '<section class="sheet-section">' + aoaToHTMLTable(s.data) + '</section>';
   }).join('');
 
+  // ✅ إصلاح: استخدام @import بدل link + خطوط بديلة متعددة للتوافق الأقصى مع html2canvas
   return '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">' +
-    '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">' +
     '<style>' +
+    '@import url(\'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap\');' +
     '* { box-sizing: border-box; }' +
-    'body { font-family: "Cairo", sans-serif; padding: 24px; max-width: 1100px; margin: auto; color: #1a1a2e; background: #fff; line-height: 1.6; }' +
+    /* ✅ خطوط متعددة للتوافق - Tahoma و Arial متوفرين في كل الأنظمة */
+    'body { font-family: \'Cairo\', \'Tahoma\', \'Arial\', sans-serif; padding: 24px; max-width: 1100px; margin: auto; color: #1a1a2e; background: #fff; line-height: 1.6; }' +
     '.doc-header { text-align: center; border-bottom: 3px solid #1a3a6b; padding-bottom: 16px; margin-bottom: 24px; }' +
     '.doc-header h1 { color: #1a3a6b; font-size: 22px; margin: 0 0 4px; font-weight: 900; }' +
     '.doc-header .sub { color: #b8860b; font-size: 15px; font-weight: 700; margin: 0 0 6px; }' +
