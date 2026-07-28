@@ -2678,6 +2678,36 @@ function buildInvoicePDFHTML(inv, invoiceId) {
 </html>`;
 }
 
+// ⚡ دالة مساعدة مشتركة: تجهّز عنصر لالتقاط الفاتورة بواسطة html2canvas
+// ⚠️ السبب الحقيقي لمشكلة "PDF صفحة بيضاء": كنا بنحط المحتوى بره حدود الشاشة
+// بإحداثيات سالبة كبيرة (top:-9999px)، ومكتبة html2canvas القديمة (v0.10.1) بتفشل
+// في حساب موقع العناصر البعيدة كده وبتلتقط منطقة فاضية. الحل: نحط المحتوى داخل
+// حدود الشاشة فعليًا (0,0) ونغطّيه بطبقة تحميل عشان المستخدم مايشوفش الفاتورة تومض.
+function preparePdfCaptureContainer(html) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0a1628;z-index:999998;display:flex;align-items:center;justify-content:center;color:#ffd700;font-family:Cairo,sans-serif;font-size:16px;text-align:center;padding:20px;';
+  overlay.textContent = '⏳ جاري إنشاء ملف PDF...';
+  document.body.appendChild(overlay);
+
+  const tempDiv = document.createElement('div');
+  tempDiv.style.cssText = 'position:fixed;top:0;left:0;width:794px;background:#fff;z-index:999997;overflow:hidden;';
+  tempDiv.innerHTML = html;
+  document.body.appendChild(tempDiv);
+
+  return {
+    tempDiv,
+    target: tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv,
+    cleanup: () => {
+      if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
+      if (document.body.contains(overlay)) document.body.removeChild(overlay);
+    }
+  };
+}
+async function waitForPdfCaptureReady() {
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch(e) {}
+  await new Promise(resolve => setTimeout(resolve, 300));
+}
+
 window.exportInvoicePDF = function(invoiceId) {
   const inv = window.appState.invoices[invoiceId];
   if (!inv) return showToast('❌ الفاتورة غير موجودة');
@@ -2717,16 +2747,8 @@ window.downloadInvoicePDFDirect = async function(invoiceId) {
     // بناء HTML الفاتورة بالتصميم المميز
     const pdfHTML = buildInvoicePDFHTML(inv, invoiceId);
     
-    // ✅ إنشاء div مخفي داخل نفس المستند (بدل iframe اللي كان بيطلّع صفحة بيضاء)
-    // html2canvas مش بيقدر يحسب الـ styles صح لعنصر جوه مستند (document) تاني زي iframe،
-    // فكان بيطلع Canvas فاضي = PDF صفحة بيضاء. الحل: نحط المحتوى في div جوه المستند الأساسي.
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;';
-    tempDiv.innerHTML = pdfHTML;
-    document.body.appendChild(tempDiv);
-    
-    // انتظار بسيط لضمان تحميل الخطوط/الأنماط
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const { tempDiv, target, cleanup } = preparePdfCaptureContainer(pdfHTML);
+    await waitForPdfCaptureReady();
     
     const opt = {
       margin: 0,
@@ -2744,11 +2766,8 @@ window.downloadInvoicePDFDirect = async function(invoiceId) {
       pagebreak: { mode: ['css', 'legacy'] }
     };
     
-    // ✅ تحويل محتوى الـ div مباشرة (نفس المستند الأساسي)
-    await html2pdf().set(opt).from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).save();
-    
-    // تنظيف
-    document.body.removeChild(tempDiv);
+    await html2pdf().set(opt).from(target).save();
+    cleanup();
     
     showToast('✅ تم تنزيل الفاتورة بنجاح!');
   } catch (e) {
@@ -2779,14 +2798,8 @@ window.downloadEnteredInvoicePDFDirect = async function(invoiceId) {
     // ✅ استخدام نفس التصميم المميز للفواتير المدخلة
     const pdfHTML = buildInvoicePDFHTML(inv, invoiceId);
     
-    // ✅ إنشاء div مخفي داخل نفس المستند (بدل iframe اللي كان بيطلّع صفحة بيضاء)
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;';
-    tempDiv.innerHTML = pdfHTML;
-    document.body.appendChild(tempDiv);
-    
-    // انتظار بسيط لضمان تحميل الخطوط/الأنماط
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const { target, cleanup } = preparePdfCaptureContainer(pdfHTML);
+    await waitForPdfCaptureReady();
     
     const opt = {
       margin: 0,
@@ -2803,8 +2816,8 @@ window.downloadEnteredInvoicePDFDirect = async function(invoiceId) {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    await html2pdf().set(opt).from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).save();
-    document.body.removeChild(tempDiv);
+    await html2pdf().set(opt).from(target).save();
+    cleanup();
     
     showToast('✅ تم تنزيل الفاتورة بنجاح!');
   } catch (e) {
@@ -2896,10 +2909,8 @@ function openPrintWindow(html, fileName) {
         const btn = iDoc.getElementById('__pdf_save_btn__');
         if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري إنشاء PDF...'; }
         try {
-          const tempDiv = document.createElement('div');
-          tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:#fff;';
-          tempDiv.innerHTML = html;
-          document.body.appendChild(tempDiv);
+          const { target, cleanup } = preparePdfCaptureContainer(html);
+          await waitForPdfCaptureReady();
           const opt = {
             margin: 0,
             filename: fileName.toLowerCase().endsWith('.pdf') ? fileName : fileName + '.pdf',
@@ -2908,8 +2919,8 @@ function openPrintWindow(html, fileName) {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: { mode: ['css', 'legacy'] }
           };
-          await html2pdf().from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).set(opt).save();
-          document.body.removeChild(tempDiv);
+          await html2pdf().from(target).set(opt).save();
+          cleanup();
           showToast('✅ تم حفظ ملف PDF بنجاح');
         } catch (e) {
           console.error('PDF save error:', e);
@@ -4041,10 +4052,8 @@ window.sendInvoicePDFWhatsApp = async function(invoiceId) {
     const fileName = `فاتورة_${clientName}_${invNum}.pdf`;
 
     // ⚡ إنشاء Container محسّن
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;background:white;';
-    tempDiv.innerHTML = pdfHTML;
-    document.body.appendChild(tempDiv);
+    const { tempDiv, target, cleanup } = preparePdfCaptureContainer(pdfHTML);
+    await waitForPdfCaptureReady();
 
     // ⚡ إعدادات PDF محسّنة للسرعة
     const opt = {
@@ -4056,12 +4065,10 @@ window.sendInvoicePDFWhatsApp = async function(invoiceId) {
       pagebreak: { mode: ['css', 'legacy'] }
     };
 
-    const pdfBlob = await html2pdf().from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
+    const pdfBlob = await html2pdf().from(target).set(opt).outputPdf('blob');
     
     // ⚡ حذف سريع
-    if (document.body.contains(tempDiv)) {
-      document.body.removeChild(tempDiv);
-    }
+    cleanup();
 
     // ⏱️ بناء رسالة الواتساب بسرعة
     const waText = buildInvoiceText(inv);
@@ -4270,10 +4277,8 @@ window.sendAllEnteredInvoicesWhatsApp = async function() {
     const fileName = `كامل_الفواتير_${invoices.length}_فاتورة.pdf`;
 
     // Create temp container for PDF generation
-    const tempDiv = document.createElement('div');
-    tempDiv.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;';
-    tempDiv.innerHTML = fullHTML;
-    document.body.appendChild(tempDiv);
+    const { target, cleanup } = preparePdfCaptureContainer(fullHTML);
+    await waitForPdfCaptureReady();
 
     const opt = {
       margin: 0,
@@ -4283,8 +4288,8 @@ window.sendAllEnteredInvoicesWhatsApp = async function() {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    const pdfBlob = await html2pdf().from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
-    document.body.removeChild(tempDiv);
+    const pdfBlob = await html2pdf().from(target).set(opt).outputPdf('blob');
+    cleanup();
 
     // Build summary text for WhatsApp
     let waSummary = `🐟 *كامل الفواتير المدخلة — الحاج أحمد الحديدي*\n━━━━━━━━━━━━━━━━━━\n📋 عدد الفواتير: *${invoices.length}*\n📦 إجمالي الأصناف: *${formatNum(totalFish)} ج.م*\n⬇️ إجمالي الخصومات: *${formatNum(totalDeduct)} ج.م*\n💰 إجمالي الصافي: *${formatNum(totalNet)} ج.م*\n━━━━━━━━━━━━━━━━━━\n`;
