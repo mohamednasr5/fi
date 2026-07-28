@@ -2745,7 +2745,7 @@ window.downloadInvoicePDFDirect = async function(invoiceId) {
     };
     
     // ✅ تحويل محتوى الـ div مباشرة (نفس المستند الأساسي)
-    await html2pdf().set(opt).from(tempDiv.firstElementChild || tempDiv).save();
+    await html2pdf().set(opt).from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).save();
     
     // تنظيف
     document.body.removeChild(tempDiv);
@@ -2803,7 +2803,7 @@ window.downloadEnteredInvoicePDFDirect = async function(invoiceId) {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    await html2pdf().set(opt).from(tempDiv.firstElementChild || tempDiv).save();
+    await html2pdf().set(opt).from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).save();
     document.body.removeChild(tempDiv);
     
     showToast('✅ تم تنزيل الفاتورة بنجاح!');
@@ -2908,7 +2908,7 @@ function openPrintWindow(html, fileName) {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             pagebreak: { mode: ['css', 'legacy'] }
           };
-          await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).save();
+          await html2pdf().from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).set(opt).save();
           document.body.removeChild(tempDiv);
           showToast('✅ تم حفظ ملف PDF بنجاح');
         } catch (e) {
@@ -4056,7 +4056,7 @@ window.sendInvoicePDFWhatsApp = async function(invoiceId) {
       pagebreak: { mode: ['css', 'legacy'] }
     };
 
-    const pdfBlob = await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
+    const pdfBlob = await html2pdf().from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
     
     // ⚡ حذف سريع
     if (document.body.contains(tempDiv)) {
@@ -4283,7 +4283,7 @@ window.sendAllEnteredInvoicesWhatsApp = async function() {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    const pdfBlob = await html2pdf().from(tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
+    const pdfBlob = await html2pdf().from(tempDiv.querySelector('.page') || tempDiv.firstElementChild || tempDiv).set(opt).outputPdf('blob');
     document.body.removeChild(tempDiv);
 
     // Build summary text for WhatsApp
