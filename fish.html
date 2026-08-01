@@ -2142,6 +2142,41 @@ async function delExtraExpense(secKey, eid){
   await window.dbRemove(window.dbRef(db, 'sectors/' + secKey + '/extras/' + eid));
   toast('\u{1F5D1}\uFE0F تم حذف المصروف','ok');
 }
+
+// ✅ دوال المصروفات الجديدة - نموذج متقدم
+function toggleExpenseForm(k){
+  var f = document.getElementById('expense-form-'+k);
+  if(f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+
+async function saveSectorExpense(k){
+  var name = document.getElementById('exp-name-'+k)?.value?.trim();
+  var details = document.getElementById('exp-details-'+k)?.value?.trim();
+  var amountStr = document.getElementById('exp-amount-'+k)?.value;
+  var date = document.getElementById('exp-date-'+k)?.value || new Date().toISOString().split('T')[0];
+  
+  if(!name) return toast('❌ أدخل اسم المصروف','err');
+  var amount = parseFloat(amountStr);
+  if(!amount || amount <= 0) return toast('❌ أدخل مبلغ صحيح','err');
+  
+  const lr = window.dbPush(window.dbRef(db, 'sectors/' + k + '/extras'));
+  await window.dbSet(lr, {
+    name: name,
+    details: details || '',
+    amount: amount,
+    date: date,
+    ts: ts()
+  });
+  
+  // مسح الحقول بعد الحفظ
+  document.getElementById('exp-name-'+k).value = '';
+  document.getElementById('exp-details-'+k).value = '';
+  document.getElementById('exp-amount-'+k).value = '';
+  document.getElementById('expense-form-'+k).style.display = 'none';
+  
+  toast('✅ تمت إضافة المصروف: ' + name + ' (' + amount.toLocaleString('ar-EG') + ' ج.م)','ok');
+}
+
 function toggleZariaForm(k){
   var f = document.getElementById('zaria-form-'+k);
   if(f) f.style.display = f.style.display==='none' ? 'block' : 'none';
@@ -2470,14 +2505,15 @@ function renderPnLCards(){
 function renderExtras(k){
   const extras = Object.entries((state.sectors[k]||{}).extras||{});
   const extraTotal = sectorExtraCost(k);
-  if(extras.length===0) return '<div style="font-size:11px;color:var(--muted);text-align:center;padding:4px 0 8px;">لا توجد مصروفات إضافية</div>';
+  if(extras.length===0) return '<div style="font-size:11px;color:var(--muted);text-align:center;padding:4px 0 8px;">لا توجد مصروفات بعد</div>';
   let h = extras.map(function(entry){
     var eid=entry[0], e=entry[1];
-    return '<div class="extra-exp-item"><div><div class="extra-exp-name">📌 '+e.name+'</div><div style="font-size:10px;color:var(--muted);">'+fmtDate(e.date)+'</div></div>'
-      +'<div style="display:flex;align-items:center;gap:7px;"><div class="extra-exp-val">'+fmtCost(e.amount)+' ج.م</div>'
+    var detailsLine = e.details ? '<div style="font-size:10px;color:var(--cyan);margin-top:2px;">📋 '+e.details+'</div>' : '';
+    return '<div class="extra-exp-item" style="background:rgba(231,76,60,.06);border:1px solid rgba(231,76,60,.15);border-radius:8px;padding:9px;margin-bottom:6px;"><div><div class="extra-exp-name">📌 '+e.name+'</div>'+detailsLine+'<div style="font-size:10px;color:var(--muted);">📅 '+fmtDate(e.date)+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:7px;"><div class="extra-exp-val" style="color:#e74c3c;font-weight:800;">'+fmtCost(e.amount)+' ج.م</div>'
       +'<button class="b-del" data-sec="'+k+'" data-eid="'+eid+'" onclick="delExtraExpense(this.dataset.sec,this.dataset.eid)">🗑️</button></div></div>';
   }).join('');
-  if(extraTotal>0) h += '<div style="text-align:left;font-size:12px;font-weight:900;color:var(--gold);border-top:1px solid rgba(255,209,102,.2);padding-top:7px;margin-top:4px;">الإجمالي: '+fmtCost(extraTotal)+' ج.م</div>';
+  if(extraTotal>0) h += '<div style="text-align:left;font-size:12px;font-weight:900;color:#e74c3c;border-top:1px solid rgba(231,76,60,.25);padding-top:7px;margin-top:4px;background:rgba(231,76,60,.08);border-radius:6px;padding:8px;margin-top:6px;">💰 إجمالي المصروفات: '+fmtCost(extraTotal)+' ج.م</div>';
   return h;
 }
 
@@ -2836,9 +2872,34 @@ function renderSectors(){
         <button class="btn btn-harvest" style="margin-top:7px;" onclick="openHarvest('${k}')">🐠 إخراج سمك كبير</button>
 
         <div style="background:rgba(255,209,102,.05);border:1px solid rgba(255,209,102,.15);border-radius:11px;padding:11px;margin-top:9px;">
-          <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;">💸 المصروفات الإضافية</div>
+          <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+            <span>💸 المصروفات</span>
+            <button class="btn btn-gold" style="padding:6px 12px;font-size:11px;background:linear-gradient(135deg,#c97d20,#e74c3c);" onclick="toggleExpenseForm('${k}')">➕ إضافة مصروف</button>
+          </div>
           ${renderExtras(k)}
-          <button class="btn btn-gold" style="margin-top:8px;" onclick="addExtraExpense('${k}')">➕ إضافة مصروف إضافي</button>
+          <div id="expense-form-${k}" style="display:none;background:rgba(0,0,0,.25);border:1px solid rgba(231,76,60,.25);border-radius:9px;padding:12px;margin-top:10px;">
+            <div style="font-size:12px;font-weight:700;color:#e74c3c;margin-bottom:10px;">📝 تفاصيل المصروف الجديد</div>
+            <div style="margin-bottom:8px;">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">🏷️ اسم المصروف *</label>
+              <input id="exp-name-${k}" type="text" placeholder="مثال: مواصلات، كهرباء، عمالة..." class="fc" style="width:100%;" />
+            </div>
+            <div style="margin-bottom:8px;">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">📋 تفاصيل المصروف (اختياري)</label>
+              <input id="exp-details-${k}" type="text" placeholder="مثال: نقل أسماك للسوق..." class="fc" style="width:100%;" />
+            </div>
+            <div style="margin-bottom:8px;">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">💰 المبلغ بالجنيه *</label>
+              <input id="exp-amount-${k}" type="number" min="0.01" step="0.01" placeholder="0.00" class="fc" style="width:100%;" />
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">📅 تاريخ الصرف</label>
+              <input id="exp-date-${k}" type="date" class="fc" style="width:100%;" value="${new Date().toISOString().split('T')[0]}" />
+            </div>
+            <div style="display:flex;gap:7px;">
+              <button class="btn btn-gold" style="flex:1;background:linear-gradient(135deg,#27ae60,#2ecc71);" onclick="saveSectorExpense('${k}')">✅ حفظ المصروف</button>
+              <button class="btn btn-sm" style="flex:1;background:rgba(255,255,255,.1);" onclick="toggleExpenseForm('${k}')">إلغاء</button>
+            </div>
+          </div>
         </div>
 
         <div class="zaria-card">
