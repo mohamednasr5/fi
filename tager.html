@@ -3406,7 +3406,8 @@ window.renderClients = function() {
 // ============================================================
 // CLIENT ACCOUNT MODAL
 // ============================================================
-window.showClientAccount = async function(clientKey) {
+// ★★★ دالة كشف الحساب مع فلتر الفترة الزمنية المدمج ★★★
+window.showClientAccount = async function(clientKey, filterFrom='', filterTo='') {
   const c = window.appState.clients[clientKey];
   if (!c) return;
   let clientPayments = [];
@@ -3423,16 +3424,52 @@ window.showClientAccount = async function(clientKey) {
   
   const clientInvoices = Object.entries(window.appState.invoices).filter(([,i]) => i.phone===c.phone);
 
+  // بناء الجدول الزمني مع تخزين نص التاريخ للفلترة
   const timeline = [
     ...clientInvoices.map(([id,inv]) => {
       const d = inv.invDateISO || inv.date?.split('T')[0] || getTodayISO();
-      return {type:'invoice', id, data:inv, ts: new Date(d+'T12:00:00').getTime()};
+      return {type:'invoice', id, data:inv, ts: new Date(d+'T12:00:00').getTime(), _dateStr: d};
     }),
     ...clientPayments.map(([id,pay]) => {
       const d = pay.customDate || pay.date?.split('T')[0] || getTodayISO();
-      return {type:'payment', id, data:pay, ts: new Date(d+'T12:00:00').getTime()};
+      return {type:'payment', id, data:pay, ts: new Date(d+'T12:00:00').getTime(), _dateStr: d};
     })
   ].sort((a,b) => a.ts - b.ts);
+
+  // تطبيق الفلتر الزمني إذا وُجد
+  const isFiltered = !!(filterFrom || filterTo);
+  let filteredTimeline = timeline;
+  if (isFiltered) {
+    filteredTimeline = timeline.filter(item => {
+      const d = item._dateStr || '';
+      if (!d) return true;
+      if (filterFrom && d < filterFrom) return false;
+      if (filterTo   && d > filterTo)   return false;
+      return true;
+    });
+  }
+
+  // حساب الإجماليات للحركات المفلترة
+  let periodPurchases = 0, periodPaid = 0;
+  filteredTimeline.forEach(item => {
+    if (item.type === 'invoice') periodPurchases += (item.data.total || 0);
+    else                          periodPaid     += (item.data.amount || 0);
+  });
+  const periodDebt = Math.max(0, periodPurchases - periodPaid);
+
+  // استخدام إجماليات الفترة إذا كان هناك فلتر، وإلا الكلية
+  const displayDebt       = isFiltered ? periodDebt      : debt;
+  const displayTotalPaid  = isFiltered ? periodPaid      : totalPaid;
+  const displayPurchases  = isFiltered ? periodPurchases  : totalPurchases;
+
+  // ★★★ تخزين بيانات الفلتر الحالية للاستخدام في الطباعة والتصدير ★★★
+  window.currentStatementFilter = {
+    clientKey: clientKey,
+    from: filterFrom,
+    to: filterTo,
+    invoices: filteredTimeline.filter(item => item.type === 'invoice').map(item => ({ id: item.id, data: item.data })),
+    payments: filteredTimeline.filter(item => item.type === 'payment').map(item => ({ id: item.id, data: item.data }))
+  };
 
   const todayISO = getTodayISO();
   const modal = document.createElement('div');
@@ -3449,35 +3486,67 @@ window.showClientAccount = async function(clientKey) {
         </div>
         <div style="display:flex;gap:6px">
           <button onclick="sendClientStatementWA('${clientKey}')" style="background:linear-gradient(135deg,#25D366,#128C7E);padding:9px 11px;border-radius:10px;font-size:18px;display:flex;align-items:center;border:none;cursor:pointer">📲</button>
-          <button onclick="exportClientStatementPDF('${clientKey}')" style="background:linear-gradient(135deg,#e74c3c,#c0392b);padding:9px 11px;border-radius:10px;font-size:18px;display:flex;align-items:center;border:none;cursor:pointer">📄</button>
+          <button onclick="exportFilteredStatementPDF()" style="background:linear-gradient(135deg,#e74c3c,#c0392b);padding:9px 11px;border-radius:10px;font-size:18px;display:flex;align-items:center;border:none;cursor:pointer">📄</button>
         </div>
       </div>
+      
+      <!-- ★★★ فلتر الفترة الزمنية لكشف الحساب ★★★ -->
+      <div id="date-filter-section" style="background:linear-gradient(135deg,rgba(0,180,216,0.08),rgba(21,101,192,0.04));border:1px solid rgba(0,180,216,0.3);border-radius:14px;padding:12px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:800;color:var(--cyan-glow);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          🔎 فلتر كشف الحساب بالتاريخ
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:120px">
+            <label style="font-size:9px;color:var(--text-secondary);display:block;margin-bottom:3px">من تاريخ</label>
+            <input type="date" id="modal-date-from" class="form-input" style="color-scheme:dark;padding:8px;font-size:11px;width:100%" value="${filterFrom||''}" ${filterFrom?'':'placeholder="البداية"'}>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <label style="font-size:9px;color:var(--text-secondary);display:block;margin-bottom:3px">إلى تاريخ</label>
+            <input type="date" id="modal-date-to" class="form-input" style="color-scheme:dark;padding:8px;font-size:11px;width:100%" value="${filterTo||''}" ${filterTo?'':'placeholder="اليوم"'}>
+          </div>
+          <button onclick="applyModalDateFilter('${clientKey}')" style="padding:8px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--emerald),#00875a);color:white;font-family:'Cairo',sans-serif;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap">✅ تطبيق</button>
+          ${isFiltered ? `<button onclick="showClientAccount('${clientKey}','','')" style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">✖ إلغاء</button>` : ''}
+        </div>
+        ${isFiltered ? `
+        <div id="modal-filter-status" style="margin-top:8px;padding:6px 10px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.35);border-radius:8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:10px;color:var(--warning);font-weight:800">🔎 فلتر مُفعّل:</span>
+          <span style="font-size:10px;color:var(--cyan-glow);font-weight:700">${filterFrom ? getDisplayDate(filterFrom) : 'البداية'}</span>
+          <span style="font-size:10px;color:var(--text-secondary)">←</span>
+          <span style="font-size:10px;color:var(--cyan-glow);font-weight:700">${filterTo ? getDisplayDate(filterTo) : 'اليوم'}</span>
+          <span style="font-size:10px;color:var(--text-secondary);margin-right:auto">| ${filteredTimeline.length} حركة</span>
+        </div>` : ''}
+      </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:14px">
-        <div style="background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.35);border-radius:13px;padding:10px 6px;text-align:center">
-          <div style="font-size:9px;color:var(--danger);margin-bottom:3px;font-weight:700">⚠️ المتبقي</div>
-          <div style="font-size:15px;font-weight:900;color:var(--danger)">${formatNum(debt)}</div>
-          <div style="font-size:9px;color:rgba(255,71,87,0.6)">ج.م</div>
+        <div style="background:${isFiltered?'rgba(255,193,7,0.1)':'rgba(255,71,87,0.1)'};border:1px solid ${isFiltered?'rgba(255,193,7,0.35)':'rgba(255,71,87,0.35)'};border-radius:13px;padding:10px 6px;text-align:center">
+          <div style="font-size:9px;color:${isFiltered?'var(--warning)':'var(--danger)'};margin-bottom:3px;font-weight:700">⚠️ ${isFiltered?'متبقي الفترة':'المتبقي'}</div>
+          <div style="font-size:15px;font-weight:900;color:${isFiltered?'var(--warning)':'var(--danger)'}">${formatNum(displayDebt)}</div>
+          <div style="font-size:9px;color:${isFiltered?'rgba(255,193,7,0.6)':'rgba(255,71,87,0.6)'}">ج.م</div>
         </div>
-        <div style="background:rgba(0,200,150,0.1);border:1px solid rgba(0,200,150,0.35);border-radius:13px;padding:10px 6px;text-align:center">
-          <div style="font-size:9px;color:var(--emerald);margin-bottom:3px;font-weight:700">✅ المدفوع</div>
-          <div style="font-size:15px;font-weight:900;color:var(--emerald)">${formatNum(totalPaid)}</div>
-          <div style="font-size:9px;color:rgba(0,200,150,0.6)">ج.م</div>
+        <div style="background:${isFiltered?'rgba(255,193,7,0.1)':'rgba(0,200,150,0.1)'};border:1px solid ${isFiltered?'rgba(255,193,7,0.35)':'rgba(0,200,150,0.35)'};border-radius:13px;padding:10px 6px;text-align:center">
+          <div style="font-size:9px;color:${isFiltered?'var(--warning)':'var(--emerald)'};margin-bottom:3px;font-weight:700">✅ ${isFiltered?'مدفوع الفترة':'المدفوع'}</div>
+          <div style="font-size:15px;font-weight:900;color:${isFiltered?'var(--warning)':'var(--emerald)'}">${formatNum(displayTotalPaid)}</div>
+          <div style="font-size:9px;color:${isFiltered?'rgba(255,193,7,0.6)':'rgba(0,200,150,0.6)'}">ج.م</div>
         </div>
-        <div style="background:rgba(0,180,216,0.1);border:1px solid rgba(0,180,216,0.35);border-radius:13px;padding:10px 6px;text-align:center">
-          <div style="font-size:9px;color:var(--cyan-glow);margin-bottom:3px;font-weight:700">💰 الإجمالي</div>
-          <div style="font-size:15px;font-weight:900;color:var(--cyan-glow)">${formatNum(totalPurchases)}</div>
-          <div style="font-size:9px;color:rgba(0,180,216,0.6)">ج.م</div>
+        <div style="background:${isFiltered?'rgba(255,193,7,0.1)':'rgba(0,180,216,0.1)'};border:1px solid ${isFiltered?'rgba(255,193,7,0.35)':'rgba(0,180,216,0.35)'};border-radius:13px;padding:10px 6px;text-align:center">
+          <div style="font-size:9px;color:${isFiltered?'var(--warning)':'var(--cyan-glow)'};margin-bottom:3px;font-weight:700">💰 ${isFiltered?'إجمالي الفترة':'الإجمالي'}</div>
+          <div style="font-size:15px;font-weight:900;color:${isFiltered?'var(--warning)':'var(--cyan-glow)'}">${formatNum(displayPurchases)}</div>
+          <div style="font-size:9px;color:${isFiltered?'rgba(255,193,7,0.6)':'rgba(0,180,216,0.6)'}">ج.م</div>
         </div>
       </div>
+      
+      ${!isFiltered ? `
       <div style="margin-bottom:14px">
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-bottom:5px">
-          <span>نسبة السداد</span><span style="color:var(--emerald);font-weight:700">${paidPct}%</span>
+          <span>نسبة السداد (الكلي)</span><span style="color:var(--emerald);font-weight:700">${paidPct}%</span>
         </div>
         <div style="height:7px;background:rgba(255,255,255,0.07);border-radius:10px;overflow:hidden">
           <div id="pay-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--emerald),var(--cyan-glow));border-radius:10px;transition:width 0.9s"></div>
         </div>
       </div>
-      ${hasDebt ? `
+      ` : ''}
+
+      ${hasDebt && !isFiltered ? `
       <div style="background:linear-gradient(135deg,rgba(0,200,150,0.08),rgba(0,180,216,0.04));border:1px solid rgba(0,200,150,0.3);border-radius:16px;padding:14px;margin-bottom:14px">
         <div style="font-size:14px;font-weight:800;color:var(--emerald);margin-bottom:12px">💳 تسجيل دفعة جديدة</div>
         <div style="margin-bottom:10px">
@@ -3523,6 +3592,12 @@ window.showClientAccount = async function(clientKey) {
           ✅ تأكيد وحفظ الدفعة
         </button>
       </div>
+      ` : isFiltered ? `
+      <div style="text-align:center;padding:14px;background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.3);border-radius:14px;margin-bottom:14px">
+        <div style="font-size:24px;margin-bottom:4px">📊</div>
+        <div style="font-size:13px;font-weight:800;color:var(--warning)">عرض كشف حساب للفترة المحددة فقط</div>
+        <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">للتسجيل ألغِ الفلتر أولاً</div>
+      </div>
       ` : `
       <div style="text-align:center;padding:16px;background:rgba(0,200,150,0.08);border:1px solid rgba(0,200,150,0.3);border-radius:14px;margin-bottom:14px">
         <div style="font-size:36px;margin-bottom:6px">✅</div>
@@ -3531,11 +3606,11 @@ window.showClientAccount = async function(clientKey) {
       `}
       <div style="margin-bottom:12px">
         <div style="font-size:13px;font-weight:800;color:var(--text-secondary);margin-bottom:10px;display:flex;align-items:center;gap:8px">
-          🕐 سجل الحركات — الأقدم أولاً
-          <span style="background:rgba(0,180,216,0.15);border:1px solid rgba(0,180,216,0.3);padding:2px 8px;border-radius:20px;font-size:10px;color:var(--cyan-glow)">${timeline.length} حركة</span>
+          🕐 ${isFiltered?'📋 سجل الحركات (الفترة المحددة)':'سجل الحركات — الأقدم أولاً'}
+          <span style="background:${isFiltered?'rgba(255,193,7,0.15)':'rgba(0,180,216,0.15)'};border:1px solid ${isFiltered?'rgba(255,193,7,0.3)':'rgba(0,180,216,0.3)'};padding:2px 8px;border-radius:20px;font-size:10px;color:${isFiltered?'var(--warning)':'var(--cyan-glow)'}">${filteredTimeline.length} حركة${isFiltered?' (مفلتر)':''}</span>
         </div>
-        ${timeline.length===0?'<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">لا توجد حركات</div>':
-          timeline.map(item => {
+        ${filteredTimeline.length===0?'<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">'+(isFiltered?'لا توجد حركات في هذه الفترة':'لا توجد حركات')+'</div>':
+          filteredTimeline.map(item => {
             if (item.type==='invoice') {
               const inv=item.data;
               return `<div onclick="closeModal();showInvoiceDetail('${item.id}')"
@@ -3565,16 +3640,41 @@ window.showClientAccount = async function(clientKey) {
                   <div style="font-size:14px;font-weight:900;color:var(--emerald)">-${formatNum(pay.amount)}</div>
                   <div style="font-size:9px;color:var(--text-secondary)">ج.م دفع</div>
                   <div style="font-size:10px;color:var(--danger)">متبقي: ${formatNum(pay.remainingAfter)}</div>
-                  <div style="display:flex;gap:4px;margin-top:4px">
+                  ${!isFiltered ? `<div style="display:flex;gap:4px;margin-top:4px">
                     <button onclick="editPaymentModal('${item.id}','${clientKey}')" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:var(--warning);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">✏️</button>
                     <button onclick="confirmDeletePayment('${item.id}','${clientKey}',${pay.amount},${pay.remainingAfter})" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">🗑️</button>
-                  </div>
+                  </div>` : ''}
                 </div>
               </div>`;
             }
           }).join('')}
       </div>
-      <button onclick="closeModal()" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--glass-border);background:transparent;color:var(--text-secondary);font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;cursor:pointer">إغلاق</button>
+      
+      <!-- ★★★ أزرار التصدير والطباعة ★★★ -->
+      <div style="background:linear-gradient(135deg,rgba(0,180,216,0.08),rgba(21,101,192,0.04));border:1px solid rgba(0,180,216,0.25);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:800;color:var(--cyan-glow);margin-bottom:10px;text-align:center">📤 تصدير وطباعة كشف الحساب${isFiltered?' (للفترة المحددة)':''}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <button onclick="closeModal();exportFilteredStatementPDF()" style="padding:12px 8px;border-radius:12px;border:none;background:linear-gradient(135deg,#e74c3c,#c0392b);color:white;font-family:'Cairo',sans-serif;font-size:11px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 4px 12px rgba(231,76,60,0.3)">
+            <span style="font-size:20px">📄</span>
+            <span>تصدير PDF</span>
+          </button>
+          <button onclick="printStatementModal()" style="padding:12px 8px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--wave-blue),var(--ocean-surface));color:white;font-family:'Cairo',sans-serif;font-size:11px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 4px 12px rgba(21,101,192,0.3)">
+            <span style="font-size:20px">🖨️</span>
+            <span>طباعة</span>
+          </button>
+          <button onclick="closeModal();sendClientStatementWA('${clientKey}')" style="padding:12px 8px;border-radius:12px;border:none;background:linear-gradient(135deg,#25D366,#128C7E);color:white;font-family:'Cairo',sans-serif;font-size:11px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:0 4px 12px rgba(37,211,102,0.3)">
+            <span style="font-size:20px">📲</span>
+            <span>واتساب</span>
+          </button>
+        </div>
+        ${isFiltered ? `
+        <div style="margin-top:10px;padding:8px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:10px;text-align:center">
+          <span style="font-size:10px;color:var(--warning);font-weight:700">⏳ سيتم تصدير/طباعة البيانات للفترة:</span>
+          <span style="font-size:10px;color:var(--cyan-glow);font-weight:800"> ${filterFrom ? getDisplayDate(filterFrom) : 'البداية'} ← ${filterTo ? getDisplayDate(filterTo) : 'اليوم'}</span>
+        </div>` : ''}
+      </div>
+      
+      <button onclick="closeModal()" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--glass-border);background:transparent;color:var(--text-secondary);font-family:'Cairo',sans-serif;font-size:14px;font-weight:600;cursor:pointer">✖ إغلاق</button>
     </div>
   `;
   modal.onclick = (e) => { if(e.target===modal) closeModal(); };
@@ -3585,6 +3685,167 @@ window.showClientAccount = async function(clientKey) {
     const bar = document.getElementById('pay-progress-bar');
     if (bar) bar.style.width = paidPct + '%';
   }, 120);
+};
+
+// ★★★ متغيرات عالمية لتخزين بيانات الفلتر الحالية للتصدير ★★★
+window.currentStatementFilter = { clientKey: '', from: '', to: '', invoices: [], payments: [] };
+
+// ★★★ دالة الطباعة النظيفة - تفاصيل الفواتير فقط ★★★
+window.printStatementModal = function() {
+  const c = window.appState.clients[window.currentStatementFilter.clientKey];
+  if (!c && !window.currentStatementFilter.invoices.length) return;
+  
+  const filterFrom = window.currentStatementFilter.from || '';
+  const filterTo = window.currentStatementFilter.to || '';
+  const isFiltered = !!(filterFrom || filterTo);
+  
+  // بناء جدول الفواتير من البيانات المخزنة
+  let invoicesHTML = '';
+  let grandTotal = 0;
+  
+  if (window.currentStatementFilter.invoices.length > 0) {
+    window.currentStatementFilter.invoices.forEach((inv, idx) => {
+      const invNum = generateInvoiceNumber(inv.id);
+      const dateStr = getDisplayDate(inv.invDateISO || inv.date, inv.dateStr);
+      const total = inv.total || 0;
+      grandTotal += total;
+      
+      invoicesHTML += `
+        <tr>
+          <td style="padding:12px 15px;text-align:center;border-bottom:1px solid #e0e0e0;font-size:13px;color:#666">${idx + 1}</td>
+          <td style="padding:12px 15px;text-align:center;border-bottom:1px solid #e0e0e0;font-size:13px;font-weight:700;color:#1a3a6b">${invNum}</td>
+          <td style="padding:12px 15px;text-align:center;border-bottom:1px solid #e0e0e0;font-size:13px;color:#333">${dateStr}</td>
+          <td style="padding:12px 15px;text-align:left;border-bottom:1px solid #e0e0e0;font-size:14px;font-weight:900;color:#c0392b">${formatNum(total)} ج.م</td>
+        </tr>`;
+    });
+  }
+  
+  // إضافة المدفوعات إذا وُجدت
+  let paymentsTotal = 0;
+  if (window.currentStatementFilter.payments.length > 0) {
+    window.currentStatementFilter.payments.forEach((pay) => {
+      const dateStr = getDisplayDate(pay.customDate || pay.date, pay.dateStr);
+      const amount = pay.amount || 0;
+      paymentsTotal += amount;
+      
+      invoicesHTML += `
+        <tr style="background:#f0fff8">
+          <td colspan="2" style="padding:10px 15px;text-align:center;border-bottom:1px solid #e0e0e0;font-size:12px;color:#27ae60">💳 دفعة</td>
+          <td style="padding:10px 15px;text-align:center;border-bottom:1px solid #e0e0e0;font-size:12px;color:#555">${dateStr}${pay.notes ? ' - ' + pay.notes : ''}</td>
+          <td style="padding:10px 15px;text-align:left;border-bottom:1px solid #e0e0e0;font-size:13px;font-weight:700;color:#27ae60">- ${formatNum(amount)} ج.م</td>
+        </tr>`;
+    });
+  }
+  
+  const netTotal = Math.max(0, grandTotal - paymentsTotal);
+  const clientName = c ? c.name : 'تاجر';
+  const clientPhone = c ? c.phone : '';
+  
+  // إنشاء نافذة للطباعة نظيفة
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>كشف حساب ${clientName}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', Arial, sans-serif; background: #fff; color: #1a1a2e; direction: rtl; padding: 30px; max-width: 700px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 3px double #1a3a6b; padding-bottom: 20px; margin-bottom: 25px; }
+        .shop-name { font-size: 26px; font-weight: 900; color: #1a3a6b; margin-bottom: 5px; }
+        .shop-sub { font-size: 14px; color: #666; }
+        .client-info { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 10px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .client-field { font-size: 14px; }
+        .client-field b { color: #1a3a6b; }
+        .period-badge { background: #fff3cd; color: #856404; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        thead { background: #1a3a6b; color: white; }
+        th { padding: 12px 15px; font-size: 13px; font-weight: 700; text-align: center; }
+        .total-section { background: linear-gradient(135deg, #1a3a6b, #2980b9); color: white; border-radius: 12px; padding: 20px; margin-top: 20px; }
+        .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 16px; }
+        .total-row.grand { font-size: 22px; font-weight: 900; border-top: 2px dashed rgba(255,255,255,0.4); margin-top: 10px; padding-top: 15px; }
+        .footer { text-align: center; margin-top: 30px; font-size: 11px; color: #999; }
+        @media print { body { padding: 15px; } .no-print { display: none; } }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="shop-name">🐟 الحاج أحمد الحديدي</div>
+        <div class="shop-sub">تجارة الأسماك — كشف حساب</div>
+      </div>
+      
+      <div class="client-info">
+        <div class="client-field"><b>التاجر:</b> ${clientName}</div>
+        <div class="client-field"><b>الهاتف:</b> ${clientPhone}</div>
+        ${isFiltered ? `<div class="period-badge">📅 الفترة: ${filterFrom ? getDisplayDate(filterFrom) : 'البداية'} ← ${filterTo ? getDisplayDate(filterTo) : 'اليوم'}</div>` : ''}
+      </div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>رقم الفاتورة</th>
+            <th>التاريخ</th>
+            <th>المبلغ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${invoicesHTML || '<tr><td colspan="4" style="text-align:center;padding:30px;color:#999;">لا توجد فواتير</td></tr>'}
+        </tbody>
+      </table>
+      
+      <div class="total-section">
+        <div class="total-row"><span>إجمالي الفواتير:</span><span>${formatNum(grandTotal)} ج.م</span></div>
+        ${paymentsTotal > 0 ? `<div class="total-row"><span>إجمالي المدفوعات:</span><span>- ${formatNum(paymentsTotal)} ج.م</span></div>` : ''}
+        <div class="total-row grand"><span>📊 الصافي المستحق:</span><span>${formatNum(netTotal)} ج.م</span></div>
+      </div>
+      
+      <div class="footer">
+        <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')} | نظام الحديدي للمحاسبة</p>
+      </div>
+      
+      <script>window.onload = function() { window.print(); }<\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+// ★★★ دالة تصدير PDF مع احترام الفلتر ★★★
+window.exportFilteredStatementPDF = async function() {
+  const ck = window.currentStatementFilter.clientKey;
+  if (!ck) return showToast('❌ لا يوجد كشف حساب محدد');
+  
+  // تطبيق الفلتر على التصدير
+  if (window.currentStatementFilter.from || window.currentStatementFilter.to) {
+    window.appState.clientStmtDateFrom = window.currentStatementFilter.from;
+    window.appState.clientStmtDateTo = window.currentStatementFilter.to;
+  }
+  
+  // استدعاء دالة التصدير الأصلية مع الفلتر
+  await exportClientStatementPDF(ck);
+};
+
+// ★★★ دالة تطبيق الفلتر من داخل النافذة المنبثقة ★★★
+window.applyModalDateFilter = function(clientKey) {
+  const fromEl = document.getElementById('modal-date-from');
+  const toEl   = document.getElementById('modal-date-to');
+  const from = (fromEl && fromEl.value) ? fromEl.value : '';
+  const to   = (toEl   && toEl.value)   ? toEl.value   : '';
+  if (!from && !to) {
+    showToast('⚠️ الرجاء تحديد تاريخ البداية أو النهاية أولاً');
+    return;
+  }
+  if (from && to && from > to) {
+    showToast('⚠️ تاريخ البداية يجب أن يكون قبل أو يساوي تاريخ النهاية');
+    return;
+  }
+  // إغلاق النافذة الحالية وفتح جديدة مع الفلتر
+  closeModal();
+  showClientAccount(clientKey, from, to);
+  showToast('✅ تم تطبيق فلتر الفترة الزمنية');
 };
 
 window.setPayAmount = function(amount, maxDebt) {
