@@ -818,9 +818,1444 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
 }
 .ios-modal-done:active { transform: scale(0.98); }
 
+/* ══════════════════════════════════════════ */
+/* 🔄 Transfer Modal Styles - نقل الزريعة */
+/* ══════════════════════════════════════════ */
+.transfer-modal-box {
+  max-width: 520px;
+  width: 95%;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+}
+
+/* إصلاح التمرير داخل Modal */
+.transfer-modal-box::-webkit-scrollbar,
+.cycles-history-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.transfer-modal-box::-webkit-scrollbar-track,
+.cycles-history-box::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 3px;
+}
+
+.transfer-modal-box::-webkit-scrollbar-thumb,
+.cycles-history-box::-webkit-scrollbar-thumb {
+  background: rgba(108, 92, 231, 0.5);
+  border-radius: 3px;
+}
+
+.transfer-modal-box::-webkit-scrollbar-thumb:hover,
+.cycles-history-box::-webkit-scrollbar-thumb:hover {
+  background: rgba(108, 92, 231, 0.8);
+}
+
+.transfer-step-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #a29bfe;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(162, 155, 254, 0.2);
+}
+
+.transfer-batch-container {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.transfer-sector-group {
+  margin-bottom: 12px;
+}
+
+.transfer-sector-name {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+}
+
+.transfer-batch-item {
+  background: rgba(0,0,0,0.25);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.transfer-batch-item:hover {
+  border-color: rgba(108, 92, 231, 0.5);
+  background: rgba(108, 92, 231, 0.08);
+}
+
+.transfer-batch-item.selected {
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.15);
+  box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
+}
+
+.batch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.batch-type {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.batch-qty {
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.batch-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0;
+  padding: 8px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.detail-row span:last-child {
+  color: #fff;
+  font-weight: 600;
+}
+
+.detail-row.total {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 4px;
+  padding-top: 4px;
+  color: var(--gold);
+  font-weight: 800;
+}
+
+.detail-row.total span:last-child {
+  color: var(--gold);
+}
+
+.batch-date {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* Status indicators */
+.status-pending { color: #fdcb6e; }
+.status-ok { color: #00b894; }
+.status-error { color: #ff7675; }
+
+/* Transfer Preview */
+.transfer-preview-container {
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.1), rgba(162, 155, 254, 0.05));
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.preview-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 20px;
+}
+
+.preview-card {
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.preview-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #a29bfe;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.preview-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.preview-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.preview-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.qty-from { color: var(--muted); text-decoration: line-through; }
+.qty-to { color: var(--cyan); font-weight: 900; }
+.qty-arrow { color: #a29bfe; margin: 0 6px; }
+.partial-badge { 
+  background: #fdcb6e; 
+  color: #000; 
+  padding: 2px 8px; 
+  border-radius: 10px; 
+  font-size: 9px; 
+  font-weight: 700;
+}
+.full-badge { 
+  background: #00b894; 
+  color: #fff; 
+  padding: 2px 8px; 
+  border-radius: 10px; 
+  font-size: 9px; 
+  font-weight: 700;
+}
+
+.preview-costs {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 4px 0;
+  color: var(--muted);
+}
+
+.cost-row span:last-child { color: #fff; font-weight: 600; }
+.cost-row.total { 
+  border-top: 1px solid rgba(255,209,102,0.3); 
+  margin-top: 6px; 
+  padding-top: 6px; 
+  color: var(--gold); 
+  font-weight: 800;
+}
+.cost-row.total span:last-child { color: var(--gold); }
+
+/* Will Happen Section */
+.transfer-will-happen {
+  background: rgba(0, 184, 148, 0.08);
+  border: 1px solid rgba(0, 184, 148, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.will-happen-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #00b894;
+  margin-bottom: 8px;
+}
+
+.will-happen-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.will-happen-list li {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 3px 0;
+  padding-right: 18px;
+  position: relative;
+}
+
+.will-happen-list li::before {
+  content: '✓';
+  position: absolute;
+  right: 0;
+  color: #00b894;
+  font-weight: 700;
+}
+
+/* Cycles History Modal */
+.cycles-history-box {
+  max-width: 500px;
+  width: 95%;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch; /* iOS smooth scrolling */
+}
+
+.cycles-history-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+.cycles-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 30px;
+  font-size: 13px;
+}
+
+/* Auto-create cycle loading */
+.auto-create-loading {
+  text-align: center;
+  padding: 40px 20px;
+  animation: fadeInUp 0.3s ease;
+}
+
+.auto-create-loading .spin {
+  margin: 0 auto 15px;
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+/* Cycle auto-created badge */
+.cycle-auto-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(108, 92, 231, 0.15);
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  color: #a29bfe;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.cycle-card {
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-left: 4px solid #666;
+}
+
+.cycle-card.cycle-active {
+  border-left-color: #00b894;
+  background: rgba(0, 184, 148, 0.08);
+}
+
+.cycle-card.cycle-completed {
+  border-left-color: #636e72;
+}
+
+.cycle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cycle-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cycle-status {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.status-active { background: rgba(0,184,148,0.2); color: #00b894; }
+.status-completed { background: rgba(99,110,114,0.2); color: #b2bec3; }
+
+.cycle-dates {
+  display: flex;
+  gap: 15px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.cycle-opening {
+  background: rgba(255,209,102,0.08);
+  border: 1px solid rgba(255,209,102,0.2);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+.cycle-opening-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+
+.opening-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opening-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.opening-row span:last-child { color: #fff; font-weight: 600; }
+.opening-row.total { 
+  border-top: 1px solid rgba(255,209,102,0.3); 
+  margin-top: 4px; 
+  padding-top: 4px; 
+  color: var(--gold); 
+  font-weight: 800;
+}
+.opening-row.total span:last-child { color: var(--gold); }
+
+.cycle-notes {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+  padding: 8px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 6px;
+}
+
+/* Close Cycle Button - زر إغلاق الدورة */
+.cycle-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.btn-close-cycle {
+  flex: 1;
+  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+}
+
+.btn-close-cycle:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4) !important;
+}
+
+.btn-close-cycle:active {
+  transform: scale(0.98);
+}
+
+.btn-view-cycle {
+  flex: 1;
+  background: linear-gradient(135deg, #3498db, #2980b9) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+}
+
+.btn-view-cycle:hover {
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4) !important;
+}
+
+/* Close Cycle Confirmation Modal - نافذة تأكيد إغلاق الدورة */
+.close-cycle-modal-box {
+  max-width: 420px;
+  width: 95%;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.close-confirm-header {
+  text-align: center;
+  padding: 20px;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(231, 76, 60, 0.25);
+}
+
+.close-confirm-icon {
+  font-size: 50px;
+  margin-bottom: 10px;
+  animation: pulse-warning 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.close-confirm-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #e74c3c;
+  margin-bottom: 5px;
+}
+
+.close-confirm-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.close-confirm-details {
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.close-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 13px;
+}
+
+.close-detail-row:last-child {
+  border-bottom: none;
+}
+
+.close-detail-row span:first-child {
+  color: var(--muted);
+}
+
+.close-detail-row span:last-child {
+  color: #fff;
+  font-weight: 600;
+}
+
+.close-detail-row.warning {
+  color: #e74c3c;
+  font-weight: 700;
+  font-size: 12px;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.close-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-cancel-close {
+  flex: 1;
+  background: rgba(108, 117, 125, 0.3) !important;
+  color: #fff !important;
+  border: 1px solid rgba(108, 117, 125, 0.4) !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-cancel-close:hover {
+  background: rgba(108, 117, 125, 0.5) !important;
+}
+
+.btn-confirm-close {
+  flex: 1;
+  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.35) !important;
+}
+
+.btn-confirm-close:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.45) !important;
+}
+
+.btn-confirm-close:active {
+  transform: translateY(0);
+}
+
+/* Cycle closed success state */
+.cycle-card.cycle-closed {
+  border-left-color: #636e72;
+  opacity: 0.85;
+}
+
+.status-closed { 
+  background: rgba(99,110,114,0.2); 
+  color: #b2bec3; 
+}
+
+/* Sector available badge after close */
+.sector-available-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 184, 148, 0.15);
+  border: 1px solid rgba(0, 184, 148, 0.3);
+  color: #00b894;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 10px;
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════ */
+/* ↩️ Undo Transfer System - نظام التراجع عن النقل */
+/* ══════════════════════════════════════════ */
+
+/* Undo Button in Notification - زر التراجع في الإشعار */
+.notification-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.btn-undo-transfer {
+  flex: 1;
+  background: linear-gradient(135deg, #fdcb6e, #f39c12) !important;
+  color: #2d3436 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+}
+
+.btn-undo-transfer:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4) !important;
+}
+
+.btn-undo-transfer:active {
+  transform: scale(0.98);
+}
+
+/* Undo Confirmation Modal - نافذة تأكيد التراجع */
+.undo-modal-box {
+  max-width: 450px;
+  width: 95%;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.undo-confirm-header {
+  text-align: center;
+  padding: 20px;
+  background: rgba(243, 156, 18, 0.1);
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(243, 156, 18, 0.25);
+}
+
+.undo-confirm-icon {
+  font-size: 50px;
+  margin-bottom: 10px;
+  animation: undoPulse 2s ease-in-out infinite;
+}
+
+@keyframes undoPulse {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-15deg) scale(1.05); }
+  75% { transform: rotate(15deg) scale(1.05); }
+}
+
+.undo-confirm-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #f39c12;
+  margin-bottom: 5px;
+}
+
+.undo-confirm-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Undo Details Card - بطاقة تفاصيل التراجع */
+.undo-details-card {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.undo-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f39c12;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(243, 156, 18, 0.2);
+}
+
+.undo-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.undo-detail-row:last-child {
+  border-bottom: none;
+}
+
+.undo-detail-row span:first-child {
+  color: var(--muted);
+}
+
+.undo-detail-row span:last-child {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* What will happen on undo - ما سيحدث عند التراجع */
+.undo-will-happen {
+  background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+
+.undo-will-happen-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #27ae60;
+  margin-bottom: 8px;
+}
+
+.undo-will-happen-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.undo-will-happen-list li {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 0;
+  padding-right: 16px;
+  position: relative;
+}
+
+.undo-will-happen-list li::before {
+  content: '↩️';
+  position: absolute;
+  right: 0;
+  font-size: 10px;
+}
+
+/* Undo Actions Buttons - أزرار إجراءات التراجع */
+.undo-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-cancel-undo {
+  flex: 1;
+  background: rgba(108, 117, 125, 0.3) !important;
+  color: #fff !important;
+  border: 1px solid rgba(108, 117, 125, 0.4) !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-cancel-undo:hover {
+  background: rgba(108, 117, 125, 0.5) !important;
+}
+
+.btn-confirm-undo {
+  flex: 1;
+  background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.35) !important;
+}
+
+.btn-confirm-undo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(243, 156, 18, 0.45) !important;
+}
+
+.btn-confirm-undo:active {
+  transform: translateY(0);
+}
+
+/* Transfer Reversed Badge - شارة النقل الملغى */
+.transfer-reversed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(231, 76, 60, 0.15);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Transfer empty state */
+.transfer-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 25px;
+  font-size: 13px;
+  background: rgba(0,0,0,0.15);
+  border-radius: 10px;
+}
+
+/* ══════════════════════════════════════════ */
+/* 📊 Cycle Production Report - تقرير إنتاج الدورة */
+/* ══════════════════════════════════════════ */
+
+.production-report-modal-box {
+  max-width: 550px;
+  width: 95%;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.report-header {
+  background: linear-gradient(135deg, rgba(0,184,148,.15), rgba(0,229,255,.1));
+  border: 1px solid rgba(0,184,148,.25);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.report-header-icon {
+  font-size: 50px;
+  margin-bottom: 8px;
+  animation: reportBounce 2s ease-in-out infinite;
+}
+
+@keyframes reportBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.report-header-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: #00b894;
+  margin-bottom: 4px;
+}
+
+.report-header-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Production Summary Cards - بطاقات ملخص الإنتاج */
+.production-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 15px 12px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0,229,255,0.3);
+}
+
+.summary-card-icon {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.summary-card-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.summary-card-label {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.summary-card.kg .summary-card-value { color: #00cec9; }
+.summary-card.ton .summary-card-value { color: #fdcb6e; }
+.summary-card.box .summary-card-value { color: #e17055; }
+
+/* Unit Toggle Buttons - أزرار تبديل الوحدات */
+.unit-toggle-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  justify-content: center;
+}
+
+.unit-toggle-btn {
+  flex: 1;
+  max-width: 100px;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: var(--muted);
+  font-family: 'Cairo', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.unit-toggle-btn.active {
+  background: linear-gradient(135deg, #00b894, #00cec9);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(0,184,148,0.35);
+}
+
+.unit-toggle-btn:hover:not(.active) {
+  border-color: rgba(0,229,255,0.5);
+  color: #fff;
+}
+
+/* Fish Type Table - جدول أنواع السمك */
+.fish-types-section {
+  background: rgba(0,0,0,0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.fish-types-header {
+  background: rgba(108,92,231,.15);
+  border-bottom: 1px solid rgba(108,92,231,.25);
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fish-types-header-icon {
+  font-size: 18px;
+}
+
+.fish-types-header-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #a29bfe;
+}
+
+.fish-type-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.fish-type-row:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.fish-type-row:last-child {
+  border-bottom: none;
+}
+
+.fish-type-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fish-type-icon {
+  font-size: 16px;
+}
+
+.fish-type-qty {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cyan);
+  text-align: center;
+}
+
+.fish-type-weight {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  text-align: center;
+}
+
+.fish-type-percent {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  text-align: center;
+  background: rgba(0,214,160,.1);
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+/* Total Row - صف الإجمالي */
+.fish-type-total {
+  background: linear-gradient(135deg, rgba(0,184,148,.08), rgba(0,229,255,.05));
+  border-top: 2px solid rgba(0,184,148,.25);
+  font-weight: 800 !important;
+}
+
+.fish-type-total .fish-type-name {
+  color: #00b894;
+}
+
+.fish-type-total .fish-type-qty,
+.fish-type-total .fish-type-weight,
+.fish-type-total .fish-type-percent {
+  color: #00b894 !important;
+  font-size: 14px !important;
+}
+
+/* Report Footer - ذيل التقرير */
+.report-footer {
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.report-footer-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.report-footer-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-print-report {
+  flex: 1;
+  background: linear-gradient(135deg, #0984e3, #74b9ff) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+.btn-close-report {
+  flex: 1;
+  background: rgba(108,117,125,.3) !important;
+  color: #fff !important;
+  border: 1px solid rgba(108,117,125,.4) !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+  font-family: 'Cairo', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-print-report:hover {
+  box-shadow: 0 4px 15px rgba(9,132,227,0.4) !important;
+}
+
+/* Empty State - حالة فارغ */
+.report-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.report-empty-icon {
+  font-size: 60px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.report-empty-text {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.report-empty-subtext {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* ══════════════════════════════════════════ */
+/* 🔔 Notification System - نظام الإشعارات */
+/* ══════════════════════════════════════════ */
+.notification-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+  width: 90%;
+  pointer-events: none;
+}
+
+.notification {
+  background: linear-gradient(135deg, rgba(4,17,31,.98), rgba(10,22,40,.98));
+  border: 1px solid var(--gb);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4), 0 0 20px rgba(108,92,231,.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: slideInNotif 0.4s cubic-bezier(.34,1.56,.64,1);
+  pointer-events: all;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.notification:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0,0,0,.5), 0 0 30px rgba(108,92,231,.25);
+}
+
+.notification.success {
+  border-color: rgba(6,214,160,.5);
+  border-left: 4px solid #00b894;
+}
+
+.notification.info {
+  border-color: rgba(0,180,216,.5);
+  border-left: 4px solid #00bce4;
+}
+
+.notification.warning {
+  border-color: rgba(255,209,102,.5);
+  border-left: 4px solid #fdcb6e;
+}
+
+.notification.error {
+  border-color: rgba(255,107,107,.5);
+  border-left: 4px solid #ff6b6b;
+}
+
+.notification-icon {
+  font-size: 24px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.notification-message {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.notification-time {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+.notification-close {
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+@keyframes slideInNotif {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideOutNotif {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100px) scale(0.95);
+  }
+}
+
+.notification.hiding {
+  animation: slideOutNotif 0.3s ease forwards;
+}
+
+/* ══════════════════════════════════════════ */
+/* 📊 Transfer Reports Page Styles */
+/* ══════════════════════════════════════════ */
+.transfer-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.transfer-stat-card {
+  background: linear-gradient(135deg, rgba(108,92,231,.15), rgba(162,155,254,.08));
+  border: 1px solid rgba(108,92,231,.3);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.transfer-stat-value {
+  font-size: 22px;
+  font-weight: 900;
+  color: #a29bfe;
+  margin-bottom: 4px;
+}
+
+.transfer-stat-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.transfer-item {
+  background: rgba(0,0,0,.25);
+  border: 1px solid rgba(108,92,231,.2);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.transfer-item:hover {
+  border-color: rgba(108,92,231,.5);
+  background: rgba(108,92,231,.08);
+}
+
+.transfer-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.transfer-item-id {
+  font-size: 11px;
+  color: #a29bfe;
+  font-weight: 600;
+}
+
+.transfer-item-badge {
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.badge-full { background: rgba(0,184,148,.2); color: #00b894; }
+.badge-partial { background: rgba(253,203,110,.2); color: #fdcb6e; }
+
+.transfer-item-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.route-from, .route-to {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.route-from { background: rgba(255,107,107,.1); color: #ff6b6b; text-align: center; }
+.route-to { background: rgba(0,184,148,.1); color: #00b894; text-align: center; }
+.route-arrow { color: #a29bfe; font-size: 16px; }
+
+.transfer-item-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.detail-chip {
+  background: rgba(0,0,0,.2);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.detail-chip span:first-child { color: var(--muted); }
+.detail-chip span:last-child { color: #fff; font-weight: 600; }
+
+.transfer-item-total {
+  background: linear-gradient(135deg, rgba(108,92,231,.2), rgba(162,155,254,.1));
+  border: 1px solid rgba(108,92,231,.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-label { font-size: 12px; font-weight: 700; color: #a29bfe; }
+.total-value { font-size: 16px; font-weight: 900; color: #fff; }
+
+.transfer-item-date {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 8px;
+  text-align: left;
+}
+
 </style>
 </head>
 <body>
+
+<!-- ============ 🔔 NOTIFICATION CONTAINER ============ -->
+<div class="notification-container" id="notification-container"></div>
 
 <!-- ============ PWA SPLASH SCREEN ============ -->
 <div id="pwa-splash">
@@ -1029,6 +2464,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       <button class="nb" onclick="showPage('zaria')">🐟 الزريعة</button>
       <button class="nb" onclick="showPage('logs')">📋 السجل</button>
       <button class="nb" onclick="showPage('movements')">🔄 الحركات</button>
+      <button class="nb" onclick="showPage('transfers')" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe);">📊 تقارير النقل</button>
     </nav>
   </header>
 
@@ -1190,6 +2626,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       <div class="pg-ttl">🐟 إدارة الزريعة</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
         <button class="btn btn-gold" style="width:auto;padding:10px 14px;" onclick="exportZariaPDF()">📄 تصدير تقرير الزريعة (PDF)</button>
+        <button class="btn" style="width:auto;padding:10px 14px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;" onclick="openTransferModal()">🔄 نقل زريعة</button>
       </div>
       <div id="zariaPageEl"><div class="loading"><div class="spin"></div></div></div>
     </div>
@@ -1243,6 +2680,266 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       </div>
       <div id="movementsEl"><div class="loading"><div class="spin"></div> تحميل...</div></div>
     </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- 📊 صفحة تقارير عمليات النقل (Transfer Reports) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="pg" id="pg-transfers">
+      <div class="pg-ttl">📊 تقارير عمليات نقل الزريعة</div>
+      
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="btn btn-gold" style="width:auto;padding:10px 14px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);" onclick="exportTransfersPDF()">📄 تصدير تقرير النقل (PDF)</button>
+        <button class="btn btn-primary" style="width:auto;padding:10px 14px;" onclick="refreshTransfersData()">🔄 تحديث البيانات</button>
+      </div>
+
+      <!-- ملخص إحصائي -->
+      <div class="transfer-summary-cards" id="transfers-summary">
+        <div class="loading"><div class="spin"></div> جاري تحميل الإحصائيات...</div>
+      </div>
+
+      <!-- فلتر التقارير -->
+      <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <select class="fc" id="trf-type" onchange="renderTransfersReports()" style="flex:1;min-width:150px;">
+            <option value="all">📋 كل عمليات النقل</option>
+            <option value="full">✅ نقل كامل فقط</option>
+            <option value="partial">⚡ نقل جزئي فقط</option>
+          </select>
+          <select class="fc" id="trf-from-sec" onchange="renderTransfersReports()" style="flex:1;min-width:150px;">
+            <option value="all">🌊 من أي قطاع</option>
+          </select>
+          <select class="fc" id="trf-to-sec" onchange="renderTransfersReports()" style="flex:1;min-width:150px;">
+            <option value="all">🌊 إلى أي قطاع</option>
+          </select>
+          <input type="date" class="fc" id="trf-from" onchange="renderTransfersReports()" style="flex:1;min-width:130px;">
+          <input type="date" class="fc" id="trf-to"   onchange="renderTransfersReports()" style="flex:1;min-width:130px;">
+          <button class="btn btn-primary" onclick="resetTrfFilters()" style="white-space:nowrap;padding:8px 14px;">🔄 إعادة ضبط</button>
+        </div>
+        <div id="trf-count" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+      </div>
+
+      <!-- قائمة عمليات النقل -->
+      <div id="transfers-list">
+        <div class="loading"><div class="spin"></div> جاري تحميل عمليات النقل...</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- 🔄 MODAL نقل الزريعة (Production Transfer) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="mo" id="transfer-modal" onclick="event.target===this&&closeTransferModal()">
+      <div class="mo-box transfer-modal-box">
+        <div class="mo-hdl"></div>
+        <div class="mo-ttl">🔄 نقل زريعة - تحويل إنتاج</div>
+        
+        <!-- خطوة 1: اختيار دفعة الزريعة -->
+        <div class="transfer-step">
+          <div class="transfer-step-title">📦 الخطوة 1: اختر دفعة الزريعة</div>
+          <div id="transfer-batch-list" class="transfer-batch-container">
+            <div class="loading"><div class="spin"></div> جاري تحميل دفعات الزريعة...</div>
+          </div>
+        </div>
+
+        <!-- خطوة 2: اختيار القطاع المستهدف -->
+        <div class="transfer-step" style="margin-top:15px;">
+          <div class="transfer-step-title">🌊 الخطوة 2: اختر القطاع المستهدف</div>
+          <select class="fc" id="target-sector-select" onchange="onTargetSectorChange()" style="width:100%;margin-bottom:8px;">
+            <option value="">-- اختر القطاع المستهدف --</option>
+          </select>
+          <div id="target-sector-status" style="font-size:12px;padding:8px;background:rgba(0,0,0,.2);border-radius:8px;">
+            <span class="status-pending">⏳ اختر قطاع مستهدف</span>
+          </div>
+        </div>
+
+        <!-- خطوة 3: كمية النقل (للنقل الجزئي) -->
+        <div class="transfer-step" style="margin-top:15px;" id="qty-step" style="display:none;">
+          <div class="transfer-step-title">🔢 الخطوة 3: كمية النقل</div>
+          <div class="fg">
+            <label class="fl">عدد الأسماك المنقولة</label>
+            <input type="number" class="fc" id="transfer-qty" min="1" step="1" placeholder="أدخل العدد" oninput="onTransferQtyChange()" style="width:100%;">
+            <div class="ibox" id="transfer-qty-info" style="margin-top:5px;font-size:11px;"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;cursor:pointer;" onclick="togglePartialTransfer()">
+            <input type="checkbox" id="partial-transfer-check" style="cursor:pointer;">
+            <span>☑️ نقل جزئي (نقل جزء من الدفعة فقط)</span>
+          </label>
+        </div>
+
+        <!-- معاينة العملية -->
+        <div class="transfer-preview-container" style="margin-top:15px;">
+          <div id="transfer-preview" class="transfer-preview">
+            <div class="preview-empty">📋 اختر دفعة زريعة لعرض التفاصيل</div>
+          </div>
+        </div>
+
+        <!-- ما سيحدث بعد النقل -->
+        <div class="transfer-will-happen" id="transfer-will-happen" style="display:none;">
+          <div class="will-happen-title">✅ بعد النقل سيتم:</div>
+          <ul class="will-happen-list">
+            <li>✓ إنشاء دورة جديدة في القطاع المستهدف</li>
+            <li>✓ نقل عدد الأسماك المحدد</li>
+            <li>✓ تسجيل تكلفة الزريعة كرصيد افتتاحي</li>
+            <li>✓ تسجيل تكلفة العلف المستهلكة</li>
+            <li>✓ إغلاق/تقليل رصيد دفعة الزريعة المصدرية</li>
+          </ul>
+        </div>
+
+        <!-- أزرار التنفيذ -->
+        <div style="display:flex;gap:10px;margin-top:15px;">
+          <button class="btn btn-danger" onclick="closeTransferModal()" style="flex:1;">✕ إلغاء</button>
+          <button class="btn" id="execute-transfer-btn" onclick="executeTransfer()" disabled style="flex:2;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;opacity:0.5;">🔄 تنفيذ النقل</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- 📊 MODAL سجل الدورات (Cycles History) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="mo" id="cycles-history-modal" onclick="event.target===this&&closeCyclesHistory()">
+      <div class="mo-box cycles-history-box">
+        <div class="mo-hdl"></div>
+        <div class="mo-ttl" id="cycles-history-title">📊 سجل الدورات</div>
+        <div id="cycles-history-content" class="cycles-history-content">
+          <div class="loading"><div class="spin"></div> جاري التحميل...</div>
+        </div>
+        <div style="margin-top:15px;text-align:center;">
+          <button class="btn btn-danger" onclick="closeCyclesHistory()">✕ إغلاق</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- 🔴 MODAL تأكيد إغلاق الدورة (Close Cycle Confirm) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="mo" id="close-cycle-modal" onclick="event.target===this&&cancelCloseCycle()">
+      <div class="mo-box close-cycle-modal-box">
+        <div class="mo-hdl"></div>
+        
+        <!-- Header -->
+        <div class="close-confirm-header">
+          <div class="close-confirm-icon">⚠️</div>
+          <div class="close-confirm-title">تأكيد إغلاق الدورة</div>
+          <div class="close-confirm-subtitle">هل أنت متأكد من إغلاق هذه الدورة؟</div>
+        </div>
+        
+        <!-- Details -->
+        <div class="close-confirm-details" id="close-cycle-details">
+          <!-- سيتم ملؤها بالجافاسكربت -->
+        </div>
+        
+        <!-- Warning -->
+        <div style="background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.25);border-radius:10px;padding:12px;margin-bottom:20px;text-align:center;">
+          <span style="color:#e74c3c;font-size:12px;font-weight:700;">⚠️ بعد الإغلاق، القطاع سيصبح فارغاً ومتاحاً لاستقبال زريعة جديدة</span>
+        </div>
+        
+        <!-- Actions -->
+        <div class="close-confirm-actions">
+          <button class="btn-cancel-close" onclick="cancelCloseCycle()">✕ إلغاء</button>
+          <button class="btn-confirm-close" id="confirm-close-btn" onclick="executeCloseCycle()">🔴 تأكيد الإغلاق</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- ↩️ MODAL تأكيد التراجع عن النقل (Undo Transfer) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="mo" id="undo-transfer-modal" onclick="event.target===this&&cancelUndoTransfer()">
+      <div class="mo-box undo-modal-box">
+        <div class="mo-hdl"></div>
+        
+        <!-- Header -->
+        <div class="undo-confirm-header">
+          <div class="undo-confirm-icon">↩️</div>
+          <div class="undo-confirm-title">تراجع عن عملية النقل</div>
+          <div class="undo-confirm-subtitle">هل تريد إلغاء عملية النقل والرجوع للوضع السابق؟</div>
+        </div>
+        
+        <!-- Transfer Details -->
+        <div class="undo-details-card">
+          <div class="undo-section-title">📋 تفاصيل عملية النقل</div>
+          <div id="undo-transfer-details">
+            <!-- سيتم ملؤها بالجافاسكربت -->
+          </div>
+        </div>
+        
+        <!-- What will happen -->
+        <div class="undo-will-happen">
+          <div class="undo-will-happen-title">✅ ما سيحدث عند التراجع:</div>
+          <ul class="undo-will-happen-list">
+            <li>إعادة تفعيل دفعة الزريعة في القطاع المصدر</li>
+            <li>استرجاع كمية الأسماك الأصلية</li>
+            <li>إغلاق الدورة في القطاع المستهدف</li>
+            <li>تسجيل العملية كسجل تراجع</li>
+          </ul>
+        </div>
+        
+        <!-- Warning -->
+        <div style="background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.25);border-radius:10px;padding:12px;margin-bottom:20px;text-align:center;">
+          <span style="color:#f39c12;font-size:12px;font-weight:700;">⚠️ هذه العملية لا يمكن التراجع عنها مرة أخرى</span>
+        </div>
+        
+        <!-- Actions -->
+        <div class="undo-actions">
+          <button class="btn-cancel-undo" onclick="cancelUndoTransfer()">✕ إلغاء</button>
+          <button class="btn-confirm-undo" id="confirm-undo-btn" onclick="executeUndoTransfer()">↩️ تأكيد التراجع</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- 📊 MODAL تقرير إنتاج الدورة (Production Report) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="mo" id="production-report-modal" onclick="event.target===this&&closeProductionReport()">
+      <div class="mo-box production-report-modal-box">
+        <div class="mo-hdl"></div>
+        
+        <!-- Header -->
+        <div class="report-header">
+          <div class="report-header-icon">📊</div>
+          <div class="report-header-title">تقرير إنتاج الدورة</div>
+          <div class="report-header-subtitle" id="report-sector-name">قطاع: - | الدورة #: -</div>
+        </div>
+        
+        <!-- Production Summary Cards -->
+        <div class="production-summary" id="production-summary">
+          <!-- سيتم ملؤها بالجافاسكربت -->
+        </div>
+        
+        <!-- Unit Toggle -->
+        <div class="unit-toggle-group">
+          <button class="unit-toggle-btn active" data-unit="kg" onclick="switchReportUnit('kg')">⚖️ كيلو</button>
+          <button class="unit-toggle-btn" data-unit="ton" onclick="switchReportUnit('ton')">🏗️ طن</button>
+          <button class="unit-toggle-btn" data-unit="box" onclick="switchReportUnit('box')">📦 بوكشة</button>
+        </div>
+        
+        <!-- Fish Types Table -->
+        <div class="fish-types-section">
+          <div class="fish-types-header">
+            <span class="fish-types-header-icon">🐟</span>
+            <span class="fish-types-header-title">تفاصيل الإنتاج حسب نوع السمك</span>
+          </div>
+          <div id="fish-types-table">
+            <!-- سيتم ملؤها بالجافاسكربت -->
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="report-footer">
+          <div class="report-footer-info">
+            <span id="report-date-info">📅 تاريخ التقرير: -</span>
+            <span id="report-cycle-duration">⏱️ مدة الدورة: -</span>
+          </div>
+          <div class="report-footer-actions">
+            <button class="btn-print-report" onclick="printProductionReport()">
+              🖨️ طباعة التقرير
+            </button>
+            <button class="btn-close-report" onclick="closeProductionReport()">
+              ✕ إغلاق
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- ============ BOTTOM NAVIGATION (auto-switches to Rail on tablet landscape) ============ -->
@@ -1267,6 +2964,9 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     </button>
     <button class="nav-item" data-page="movements" onclick="showPage('movements')">
       <span class="nav-icon">🔄</span><span class="nav-label">الحركات</span>
+    </button>
+    <button class="nav-item" data-page="transfers" onclick="showPage('transfers')" style="background:linear-gradient(135deg,#6c5ce733,#a29bfe22);">
+      <span class="nav-icon">📊</span><span class="nav-label">النقل</span>
     </button>
   </nav>
 </div>
@@ -2314,6 +4014,7 @@ function init(){
 
 function showPage(p){
   if(p==='zaria') renderZariaPage();
+  if(p==='transfers'){ loadTransfersData(); populateTransferFilters(); }
   document.querySelectorAll('.pg').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.bottom-nav .nav-item').forEach(x=>x.classList.remove('active'));
@@ -2323,7 +4024,7 @@ function showPage(p){
     const el=document.getElementById('pg-'+p); if(el) el.classList.add('active');
   }
   if(p==='movements'){initMovementsFilters();renderMovements();}
-  const idx=['dashboard','sectors','store','feed','zaria','logs','movements'].indexOf(p);
+  const idx=['dashboard','sectors','store','feed','zaria','logs','movements','transfers'].indexOf(p);
   if(idx>=0) document.querySelectorAll('.nb')[idx].classList.add('active');
   // Sync new bottom-nav active state
   const bnItem = document.querySelector('.bottom-nav .nav-item[data-page="'+p+'"]');
@@ -2913,6 +4614,7 @@ function renderSectors(){
 
         <div style="display:flex; gap:7px; margin-top:7px;">
           <button class="btn btn-gold" style="flex:1;" onclick="exportSectorData('${k}')">📄 تصدير القطاع (PDF)</button>
+          <button class="btn" style="flex:1;background:linear-gradient(135deg,#0984e3,#74b9ff);color:#fff;border:none;" onclick="showSectorCyclesHistory('${k}')">📊 سجل الدورات</button>
           <button class="btn btn-danger" style="flex:1;" onclick="resetSectorData('${k}')">🗑️ تصفير القطاع</button>
         </div>
       </div>
@@ -5492,6 +7194,1915 @@ window.exportDashboardPDF = exportDashboardPDF;
 window.exportMovementsPDF = exportMovementsPDF;
 window.resetSectorData     = resetSectorData;
 window.resetAllProgramData = resetAllProgramData;
+
+// ══════════════════════════════════════════════════════════════════
+// 🔄 نظام نقل الزريعة (Production Transfer System)
+// ══════════════════════════════════════════════════════════════════
+
+// حالة النقل الحالية
+let transferState = {
+  selectedBatch: null,  // {secKey, zid, data}
+  targetSector: null,
+  transferQty: 0,
+  isPartial: false
+};
+
+// فتح Modal نقل الزريعة
+function openTransferModal(batchSecKey, batchZid) {
+  console.log('🔄 openTransferModal called');
+  
+  const modal = document.getElementById('transfer-modal');
+  if (!modal) {
+    console.error('❌ transfer-modal not found!');
+    toast('❌ خطأ: لم يتم العثور على نافذة النقل', 'err');
+    return;
+  }
+  
+  // إعادة تعيين الحالة
+  transferState = { selectedBatch: null, targetSector: null, transferQty: 0, isPartial: false };
+  
+  // ملء قائمة دفعات الزريعة المتاحة للنقل
+  renderTransferBatchList();
+  
+  // ملء قائمة القطاعات المتاحة (الفارغة)
+  renderTargetSectorsList();
+  
+  // إظهار Modal - استخدام class 'open' وليس 'active'
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  
+  console.log('✅ Transfer modal opened successfully');
+}
+
+// إغلاق Modal نقل الزريعة
+function closeTransferModal() {
+  const modal = document.getElementById('transfer-modal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  document.body.style.overflow = '';
+  transferState = { selectedBatch: null, targetSector: null, transferQty: 0, isPartial: false };
+}
+
+// عرض قائمة دفعة الزريعة المتاحة للنقل
+function renderTransferBatchList() {
+  const container = document.getElementById('transfer-batch-list');
+  if (!container) return;
+  
+  let html = '<div class="transfer-section-title">📦 اختر دفعة الزريعة المنقولة</div>';
+  
+  let hasBatches = false;
+  Object.entries(SECTORS).forEach(([secKey, sec]) => {
+    const zariaList = Object.entries((state.sectors[secKey] || {}).zaria || {})
+      .filter(([, z]) => (z.status || 'active') === 'active' && (z.qty || 0) > 0)
+      .sort((a, b) => (a[1].date || '') > (b[1].date || '') ? -1 : 1);
+    
+    if (zariaList.length > 0) {
+      hasBatches = true;
+      html += `<div class="transfer-sector-group">
+        <div class="transfer-sector-name" style="color:${sec.color}">${sec.icon} ${sec.name}</div>`;
+      
+      zariaList.forEach(([zid, z]) => {
+        const totalCost = (z.qty || 0) * (z.price || 0);
+        const feedCost = sectorZariaFeedCost(secKey) || 0;
+        const expCost = sectorZariaExpenseCost(secKey) || 0;
+        const grandTotal = totalCost + feedCost + expCost;
+        
+        html += `<div class="transfer-batch-item" onclick="selectTransferBatch('${secKey}', '${zid}')" data-sec="${secKey}" data-zid="${zid}" id="batch-${secKey}-${zid}">
+          <div class="batch-header">
+            <span class="batch-type">${z.fishType ? z.fishType + ' ' : ''}🐟</span>
+            <span class="batch-qty">${(z.qty || 0).toLocaleString('ar-EG')} قطعة</span>
+          </div>
+          <div class="batch-details">
+            <div class="detail-row"><span>💰 تكلفة الزريعة:</span><span>${fmtCost(totalCost)} ج.م</span></div>
+            <div class="detail-row"><span>🌾 تكلفة العلف:</span><span>${fmtCost(feedCost)} ج.م</span></div>
+            <div class="detail-row"><span>💸 مصاريف أخرى:</span><span>${fmtCost(expCost)} ج.م</span></div>
+            <div class="detail-row total-row"><span>📊 الإجمالي:</span><span>${fmtCost(grandTotal)} ج.م</span></div>
+          </div>
+          <div class="batch-date">📅 ${fmtDate(z.date)} ${z.notes ? '| ' + z.notes : ''}</div>
+        </div>`;
+      });
+      
+      html += '</div>';
+    }
+  });
+  
+  if (!hasBatches) {
+    html += '<div class="transfer-empty">❌ لا توجد دفعات زريعة نشطة متاحة للنقل</div>';
+  }
+  
+  container.innerHTML = html;
+  updateTransferPreview();
+}
+
+// اختيار دفعة زريعة للنقل
+function selectTransferBatch(secKey, zid) {
+  const batchData = state.sectors[secKey]?.zaria?.[zid];
+  if (!batchData) return;
+  
+  transferState.selectedBatch = { secKey, zid, data: batchData };
+  transferState.transferQty = batchData.qty || 0;
+  transferState.isPartial = false;
+  
+  // تحديث الواجهة
+  document.querySelectorAll('.transfer-batch-item').forEach(el => el.classList.remove('selected'));
+  const selectedEl = document.getElementById(`batch-${secKey}-${zid}`);
+  if (selectedEl) selectedEl.classList.add('selected');
+  
+  // ملء كمية النقل
+  const qtyInput = document.getElementById('transfer-qty');
+  if (qtyInput) qtyInput.value = transferState.transferQty;
+  
+  // إظهار قسم الكمية
+  const qtyStep = document.getElementById('qty-step');
+  if (qtyStep) qtyStep.style.display = 'block';
+  
+  // تحديث معلومات الكمية
+  updateTransferQtyInfo();
+  
+  // تحديث المعاينة
+  updateTransferPreview();
+  validateTransfer();
+}
+
+// تحديث معلومات كمية النقل
+function updateTransferQtyInfo() {
+  const infoEl = document.getElementById('transfer-qty-info');
+  if (!infoEl || !transferState.selectedBatch) return;
+  
+  const maxQty = transferState.selectedBatch.data.qty || 0;
+  infoEl.innerHTML = `<span style="color:var(--muted);">الحد الأقصى المتاح: </span><span style="color:var(--cyan);font-weight:700;">${maxQty.toLocaleString('ar-EG')} قطعة</span>`;
+}
+
+// تبديل وضع النقل الجزئي
+function togglePartialTransfer() {
+  const checkbox = document.getElementById('partial-transfer-check');
+  if (!checkbox) return;
+  
+  transferState.isPartial = checkbox.checked;
+  
+  const qtyInput = document.getElementById('transfer-qty');
+  if (qtyInput && transferState.selectedBatch) {
+    if (!transferState.isPartial) {
+      qtyInput.value = transferState.selectedBatch.data.qty || 0;
+      qtyInput.disabled = true;
+      qtyInput.style.opacity = '0.6';
+    } else {
+      qtyInput.disabled = false;
+      qtyInput.style.opacity = '1';
+      qtyInput.focus();
+    }
+    onTransferQtyChange();
+  }
+  
+  updateTransferPreview();
+}
+
+// عرض القطاعات المستهدفة المتاحة (الفارغة)
+function renderTargetSectorsList() {
+  const select = document.getElementById('target-sector-select');
+  if (!select) return;
+  
+  let html = '<option value="">-- اختر القطاع المستهدف --</option>';
+  
+  Object.entries(SECTORS).forEach(([secKey, sec]) => {
+    const sectorData = state.sectors[secKey] || {};
+    
+    // التحقق من وجود دورة نشطة
+    const cycles = sectorData.cycles || {};
+    const activeCycle = Object.values(cycles).find(c => c.status === 'active');
+    const hasFish = sectorData.fish && Object.keys(sectorData.fish).length > 0;
+    
+    // استبعاد القطاع المصدر إذا تم اختياره
+    const isSource = transferState.selectedBatch && transferState.selectedBatch.secKey === secKey;
+    
+    const isAvailable = !activeCycle && !hasFish && !isSource;
+    
+    if (isAvailable) {
+      html += `<option value="${secKey}" style="color:${sec.color}">${sec.icon} ${sec.name} ✅ (متاح)</option>`;
+    } else if (isSource) {
+      html += `<option value="${secKey}" disabled style="color:#888">${sec.icon} ${sec.name} ❌ (مصدر النقل)</option>`;
+    } else {
+      html += `<option value="${secKey}" disabled style="color:#888">${sec.icon} ${sec.name} ❌ (مشغول)</option>`;
+    }
+  });
+  
+  select.innerHTML = html;
+}
+
+// تغيير القطاع المستهدف
+function onTargetSectorChange() {
+  const select = document.getElementById('target-sector-select');
+  if (!select) return;
+  
+  transferState.targetSector = select.value || null;
+  updateTargetSectorStatus();
+  updateTransferPreview();
+  validateTransfer();
+}
+
+// تحديث حالة القطاع المستهدف
+function updateTargetSectorStatus() {
+  const statusEl = document.getElementById('target-sector-status');
+  if (!statusEl) return;
+  
+  if (!transferState.targetSector) {
+    statusEl.innerHTML = '<span class="status-pending">⏳ اختر قطاع مستهدف</span>';
+    return;
+  }
+  
+  const sec = SECTORS[transferState.targetSector];
+  const sectorData = state.sectors[transferState.targetSector] || {};
+  
+  // التحقق من أن القطاع فارغ (لا توجد دورة نشطة)
+  const cycles = sectorData.cycles || {};
+  const activeCycle = Object.values(cycles).find(c => c.status === 'active');
+  const hasFish = sectorData.fish && Object.keys(sectorData.fish).length > 0;
+  
+  if (!activeCycle && !hasFish) {
+    statusEl.innerHTML = `<span class="status-ok">✅ القطاع ${sec.name} فارغ وجاهز لاستقبال الزريعة</span>`;
+  } else {
+    statusEl.innerHTML = `<span class="status-error">❌ القطاع ${sec.name} يحتوي على دورة نشطة</span>`;
+  }
+}
+
+// تغيير كمية النقل (للنقل الجزئي)
+function onTransferQtyChange() {
+  const input = document.getElementById('transfer-qty');
+  if (!input || !transferState.selectedBatch) return;
+  
+  const maxQty = transferState.selectedBatch.data.qty || 0;
+  let qty = parseInt(input.value) || 0;
+  
+  if (qty > maxQty) {
+    qty = maxQty;
+    input.value = qty;
+  }
+  if (qty <= 0) qty = maxQty;
+  
+  transferState.transferQty = qty;
+  transferState.isPartial = qty < maxQty;
+  
+  updateTransferPreview();
+  validateTransfer();
+}
+
+// تحديث معاينة النقل
+function updateTransferPreview() {
+  const previewEl = document.getElementById('transfer-preview');
+  const willHappenEl = document.getElementById('transfer-will-happen');
+  if (!previewEl) return;
+  
+  if (!transferState.selectedBatch) {
+    previewEl.innerHTML = '<div class="preview-empty">📋 اختر دفعة زريعة لعرض التفاصيل</div>';
+    if (willHappenEl) willHappenEl.style.display = 'none';
+    return;
+  }
+  
+  const { secKey, zid, data } = transferState.selectedBatch;
+  const sourceSec = SECTORS[secKey];
+  const qty = transferState.transferQty || data.qty || 0;
+  const maxQty = data.qty || 0;
+  const ratio = maxQty > 0 ? qty / maxQty : 1;
+  
+  // حساب التكاليف (مع مراعاة النقل الجزئي)
+  const fishCost = (data.qty || 0) * (data.price || 0) * ratio;
+  const feedCost = (sectorZariaFeedCost(secKey) || 0) * ratio;
+  const expCost = (sectorZariaExpenseCost(secKey) || 0) * ratio;
+  const totalCost = fishCost + feedCost + expCost;
+  
+  previewEl.innerHTML = `
+    <div class="preview-card">
+      <div class="preview-title">📋 ملخص عملية النقل</div>
+      
+      <div class="preview-section">
+        <div class="preview-label">من القطاع</div>
+        <div class="preview-value" style="color:${sourceSec.color}">${sourceSec.icon} ${sourceSec.name}</div>
+      </div>
+      
+      <div class="preview-section">
+        <div class="preview-label">نوع السمك</div>
+        <div class="preview-value">${data.fishType || 'غير محدد'}</div>
+      </div>
+      
+      <div class="preview-section">
+        <div class="preview-label">عدد الأسماك</div>
+        <div class="preview-value">
+          <span class="qty-from">${maxQty.toLocaleString('ar-EG')}</span>
+          <span class="qty-arrow">→</span>
+          <span class="qty-to">${qty.toLocaleString('ar-EG')} قطعة</span>
+          ${transferState.isPartial ? '<span class="partial-badge">جزئي</span>' : '<span class="full-badge">كامل</span>'}
+        </div>
+      </div>
+      
+      <div class="preview-costs">
+        <div class="cost-row"><span>🐟 تكلفة الزريعة:</span><span>${fmtCost(fishCost)} ج.م</span></div>
+        <div class="cost-row"><span>🌾 تكلفة العلف:</span><span>${fmtCost(feedCost)} ج.م</span></div>
+        <div class="cost-row"><span>💸 مصاريف أخرى:</span><span>${fmtCost(expCost)} ج.م</span></div>
+        <div class="cost-row total"><span>📊 الإجمالي (رصيد افتتاحي):</span><span>${fmtCost(totalCost)} ج.م</span></div>
+      </div>
+      
+      ${transferState.targetSector ? `
+      <div class="preview-section" style="margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:10px;">
+        <div class="preview-label">إلى القطاع</div>
+        <div class="preview-value" style="color:${SECTORS[transferState.targetSector]?.color}">${SECTORS[transferState.targetSector]?.icon} ${SECTORS[transferState.targetSector]?.name}</div>
+      </div>
+      ` : ''}
+    </div>
+  `;
+  
+  // إظهار/إخفاء قسم "ما سيحدث"
+  if (willHappenEl) {
+    willHappenEl.style.display = (transferState.selectedBatch && transferState.targetSector) ? 'block' : 'none';
+  }
+}
+
+// التحقق من صحة عملية النقل
+function validateTransfer() {
+  const btn = document.getElementById('execute-transfer-btn');
+  if (!btn) return;
+  
+  const isValid = transferState.selectedBatch && transferState.targetSector && transferState.transferQty > 0;
+  btn.disabled = !isValid;
+  btn.style.opacity = isValid ? '1' : '0.5';
+}
+
+// تنفيذ عملية النقل
+async function executeTransfer() {
+  if (!transferState.selectedBatch || !transferState.targetSector) {
+    toast('❌ يرجى اختيار دفعة زريعة وقطاع مستهدف', 'err');
+    return;
+  }
+  
+  const { secKey: fromSec, zid, data } = transferState.selectedBatch;
+  const toSec = transferState.targetSector;
+  const transferQty = transferState.transferQty;
+  const maxQty = data.qty || 0;
+  const isPartial = transferState.isPartial;
+  const ratio = maxQty > 0 ? transferQty / maxQty : 1;
+  
+  // التحقق مرة أخرى من أن القطاع المستهدف فارغ
+  const targetData = state.sectors[toSec] || {};
+  const targetCycles = targetData.cycles || {};
+  const activeCycle = Object.values(targetCycles).find(c => c.status === 'active');
+  const hasFish = targetData.fish && Object.keys(targetData.fish).length > 0;
+  
+  if (activeCycle || hasFish) {
+    toast('❌ لا يمكن النقل: القطاع المستهدف يحتوي على دورة نشطة', 'err');
+    return;
+  }
+  
+  // تأكيد العملية
+  const confirmMsg = isPartial 
+    ? `⚠️ تأكيد نقل جزئي:\n- من: ${SECTORS[fromSec].name}\n- إلى: ${SECTORS[toSec].name}\n- العدد: ${transferQty.toLocaleString('ar-EG')} من ${maxQty.toLocaleString('ar-EG')} قطعة\n\nسيتم إنشاء دورة جديدة في القطاع المستهدف. متأكد؟`
+    : `✅ تأكيد نقل كامل:\n- من: ${SECTORS[fromSec].name}\n- إلى: ${SECTORS[toSec].name}\n- العدد: ${transferQty.toLocaleString('ar-EG')} قطعة\n\nسيتم إنشاء دورة جديدة وإغلاق الدفعة. متأكد؟`;
+  
+  if (!confirm(confirmMsg)) return;
+  
+  try {
+    // حساب التكاليف المنقولة
+    const fishCost = (data.qty || 0) * (data.price || 0) * ratio;
+    const feedCost = (sectorZariaFeedCost(fromSec) || 0) * ratio;
+    const expCost = (sectorZariaExpenseCost(fromSec) || 0) * ratio;
+    const totalCost = fishCost + feedCost + expCost;
+    
+    const now = new Date().toISOString().split('T')[0];
+    const ts = Date.now();
+    
+    // 1. إنشاء دورة جديدة في القطاع المستهدف
+    const cycleId = `cycle_${ts}`;
+    const existingCycles = Object.keys((state.sectors[toSec] || {}).cycles || {});
+    const cycleNum = existingCycles.length + 1;
+    
+    const newCycle = {
+      id: cycleId,
+      number: cycleNum,
+      status: 'active',
+      startDate: now,
+      sourceSector: fromSec,
+      sourceBatchId: zid,
+      transferDate: now,
+      openingBalance: {
+        fishCount: transferQty,
+        fishType: data.fishType || '',
+        fishCost: fishCost,
+        feedCost: feedCost,
+        otherCost: expCost,
+        totalCost: totalCost
+      },
+      currentFish: transferQty,
+      fish: {},
+      expenses: {},
+      sales: {},
+      mortality: 0,
+      notes: `تم النقل من ${SECTORS[fromSec].name} - دفعة ${zid}`
+    };
+    
+    await window.dbSet(window.dbRef(db, `sectors/${toSec}/cycles/${cycleId}`), newCycle);
+    
+    // 2. تسجيل سجل النقل في جدول Transfers
+    const transferRecord = {
+      id: `TR-${Date.now()}`,
+      fromSectorId: fromSec,
+      toSectorId: toSec,
+      fromBatchId: zid,
+      toCycleId: cycleId,
+      transferDate: now,
+      fishCount: transferQty,
+      originalCount: maxQty,
+      fishCost: fishCost,
+      feedCost: feedCost,
+      otherCost: expCost,
+      totalCost: totalCost,
+      isPartial: isPartial,
+      fishType: data.fishType || '',
+      notes: `نقل ${isPartial ? 'جزئي' : 'كامل'} من ${SECTORS[fromSec].name} إلى ${SECTORS[toSec].name}`,
+      ts: ts,
+      createdBy: currentUser?.uid || 'unknown'
+    };
+    
+    const transferRef = window.dbPush(window.dbRef(db, 'transfers'));
+    await window.dbSet(transferRef, transferRecord);
+    
+    // 3. تحديث دفعة الزريعة المصدرية
+    if (isPartial) {
+      // النقل الجزئي: تقليل الكمية
+      const remainingQty = maxQty - transferQty;
+      await window.dbUpdate(window.dbRef(db, `sectors/${fromSec}/zaria/${zid}`), {
+        qty: remainingQty,
+        lastTransferDate: now,
+        lastTransferQty: transferQty,
+        transferredTo: toSec
+      });
+    } else {
+      // النقل الكامل: إغلاق الدفعة
+      await window.dbUpdate(window.dbRef(db, `sectors/${fromSec}/zaria/${zid}`), {
+        status: 'transferred',
+        transferredTo: toSec,
+        transferredCycleId: cycleId,
+        transferDate: now,
+        notes: (data.notes || '') + ' | تم النقل الكامل يوم ' + now
+      });
+    }
+    
+    // 4. إضافة سجل في الـ logs
+    const logRef = window.dbPush(window.dbRef(db, 'logs'));
+    await window.dbSet(logRef, {
+      type: 'zaria_transfer',
+      sector: fromSec,
+      targetSector: toSec,
+      fishType: data.fishType || 'زريعة',
+      qty: transferQty,
+      originalQty: maxQty,
+      totalCost: totalCost,
+      isPartial: isPartial,
+      date: now,
+      notes: `نقل ${isPartial ? 'جزئي' : 'كامل'} زريعة (${transferQty.toLocaleString('ar-EG')} قطعة) من ${SECTORS[fromSec].name} → ${SECTORS[toSec].name} | التكلفة: ${fmtCost(totalCost)} ج.م`,
+      ts: ts
+    });
+    
+    // 5. إغلاق Modal وعرض رسالة النجاح
+    closeTransferModal();
+    
+    const successMsg = isPartial
+      ? `✅ تم النقل الجزئي بنجاح!\n- تم نقل ${transferQty.toLocaleString('ar-EG')} قطعة إلى ${SECTORS[toSec].name}\n- المتبقي في المصدر: ${(maxQty - transferQty).toLocaleString('ar-EG')} قطعة\n- تم إنشاء دورة جديدة #${cycleNum}`
+      : `✅ تم النقل الكامل بنجاح!\n- تم نقل ${transferQty.toLocaleString('ar-EG')} قطعة إلى ${SECTORS[toSec].name}\n- تم إغلاق دفعة الزريعة\n- تم إنشاء دورة جديدة #${cycleNum}\n- الرصيد الافتتاحي: ${fmtCost(totalCost)} ج.م`;
+    
+    toast(successMsg, 'ok');
+    
+    // 🔔 إظهار إشعار النجاح
+    const notificationData = {
+      fromSectorId: fromSec,
+      toSectorId: toSec,
+      fromBatchId: zid,           // معرف دفعة الزريعة المصدرية
+      toCycleId: cycleId,         // معرف الدورة الجديدة في المستهدف
+      fishCount: transferQty,
+      originalCount: maxQty,
+      totalCost: totalCost,
+      isPartial: isPartial
+    };
+    
+    // حفظ بيانات النقل الكاملة للاستخدام في التراجع
+    window.lastTransferRecord = {
+      ...notificationData,
+      id: transferRecord.id,     // من الخطوة 2
+      transferDate: now          // تاريخ النقل
+    };
+    
+    if (isPartial) {
+      notifyTransferPartial(notificationData);
+    } else {
+      notifyTransferSuccess(notificationData);
+    }
+    
+    // تحديث الواجهة
+    renderZariaPage();
+    renderSectors();
+    renderDashboard();
+    
+  } catch (error) {
+    console.error('Transfer error:', error);
+    toast('❌ حدث خطأ أثناء تنفيذ عملية النقل: ' + error.message, 'err');
+    
+    // 🔔 إظهار إشعار الخطأ
+    notifyTransferError(error.message);
+  }
+}
+
+// عرض سجل عمليات النقل
+function showTransfersHistory() {
+  showPage('movements');
+}
+
+// عرض سجل دورات قطاع معين
+async function showSectorCyclesHistory(secKey) {
+  const modal = document.getElementById('cycles-history-modal');
+  if (!modal) return;
+  
+  const sec = SECTORS[secKey];
+  const sectorData = state.sectors[secKey] || {};
+  let cycles = sectorData.cycles || {};
+  
+  const titleEl = document.getElementById('cycles-history-title');
+  const contentEl = document.getElementById('cycles-history-content');
+  
+  if (titleEl) titleEl.textContent = `📊 سجل دورات ${sec.name}`;
+  
+  // ═════════════════════════════════════════════════════
+  // 🔄 AUTO-CREATE CYCLE: لو القطاع نشط ومفيش دورات
+  // ═════════════════════════════════════════════════════
+  const cyclesArray = Object.values(cycles);
+  const hasActiveCycle = cyclesArray.some(c => c.status === 'active');
+  
+  // التحقق إذا كان القطاع نشط (فيه زريعة أو أسماك)
+  const zaria = sectorData.zaria || {};
+  const fish = sectorData.fish || {};
+  const hasZaria = Object.keys(zaria).length > 0;
+  const hasFish = Object.keys(fish).length > 0;
+  const isSectorActive = hasZaria || hasFish;
+  
+  // لو مفيش دورات نشطة والقطاع فيه بيانات → اعمل دورة تلقائية
+  if (!hasActiveCycle && isSectorActive) {
+    contentEl.innerHTML = `
+      <div style="text-align:center;padding:30px;">
+        <div class="spin" style="margin:0 auto 15px;"></div>
+        <div style="color:var(--muted);font-size:13px;">جاري إنشاء الدورة الأولى لهذا القطاع...</div>
+      </div>
+    `;
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    
+    try {
+      // حساب البيانات من الزريعة الموجودة
+      let totalFishCount = 0;
+      let totalFishCost = 0;
+      let fishType = '';
+      
+      // جمع بيانات الزريعة
+      Object.values(zaria).forEach(z => {
+        if (z.status !== 'transferred' && z.status !== 'closed') {
+          const qty = z.qty || 0;
+          const price = z.price || 0;
+          totalFishCount += qty;
+          totalFishCost += qty * price;
+          if (!fishType && z.fishType) fishType = z.fishType;
+        }
+      });
+      
+      // حساب تكلفة العلف
+      const feedCost = sectorZariaFeedCost(secKey) || 0;
+      
+      // حساب المصاريف
+      const expCost = sectorZariaExpenseCost(secKey) || 0;
+      
+      const totalCost = totalFishCost + feedCost + expCost;
+      
+      // إنشاء الدورة الجديدة
+      const now = new Date().toISOString();
+      const cycleId = `CYC-${Date.now()}`;
+      
+      // تحديد رقم الدورة (أكبر رقم موجود + 1)
+      const cycleNumbers = cyclesArray.map(c => c.number || 0);
+      const nextCycleNum = cycleNumbers.length > 0 ? Math.max(...cycleNumbers) + 1 : 1;
+      
+      const newCycle = {
+        id: cycleId,
+        number: nextCycleNum,
+        status: 'active',
+        startDate: now,
+        sourceType: 'auto_created',
+        openingBalance: {
+          fishCount: totalFishCount,
+          fishType: fishType || 'زريعة',
+          fishCost: totalFishCost,
+          feedCost: feedCost,
+          otherCost: expCost,
+          totalCost: totalCost
+        },
+        currentFish: totalFishCount + Object.values(fish).reduce((sum, f) => sum + (f.qty || f.kg || 0), 0),
+        notes: `دورة تم إنشاؤها تلقائياً من البيانات الموجودة - ${now}`,
+        autoCreatedAt: Date.now()
+      };
+      
+      // حفظ الدورة في Firebase
+      await window.dbSet(window.dbRef(window.db, `sectors/${secKey}/cycles/${cycleId}`), newCycle);
+      
+      // تحديث الـ state المحلي
+      if (!sectorData.cycles) sectorData.cycles = {};
+      sectorData.cycles[cycleId] = newCycle;
+      cycles = sectorData.cycles;
+      
+      console.log(`✅ Auto-created cycle #${nextCycleNum} for sector ${secKey}`);
+      
+    } catch (error) {
+      console.error('Error auto-creating cycle:', error);
+      contentEl.innerHTML = `
+        <div class="cycles-empty" style="border:1px solid rgba(231,76,60,.3);background:rgba(231,76,60,.08);">
+          ⚠️ حدث خطأ أثناء إنشاء الدورة التلقائية
+          <br><br>
+          <button class="btn" onclick="showSectorCyclesHistory('${secKey}')" style="margin-top:10px;background:var(--teal);color:#fff;">
+            🔄 إعادة المحاولة
+          </button>
+        </div>
+      `;
+      return;
+    }
+  }
+  
+  // ═════════════════════════════════════════════════════
+  // عرض قائمة الدورات
+  // ═════════════════════════════════════════════════════
+  const finalCyclesArray = Object.values(cycles).sort((a, b) => (a.number || 0) - (b.number || 0));
+  
+  if (finalCyclesArray.length === 0) {
+    contentEl.innerHTML = `
+      <div class="cycles-empty">
+        <div style="font-size:40px;margin-bottom:10px;">📊</div>
+        <div>لا توجد دورات مسجلة لهذا القطاع</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">
+          ${isSectorActive ? 
+            'يوجد بيانات في هذا القطاع لكن لم يتم إنشاء دورة بعد' : 
+            'هذا القطاع فارغ - أضف زريعة أو انقل زريعة لإنشاء دورة'}
+        </div>
+      </div>
+    `;
+  } else {
+    contentEl.innerHTML = finalCyclesArray.map(cycle => {
+      const isOpening = cycle.status === 'active';
+      const isClosed = cycle.status === 'closed';
+      const isAutoCreated = cycle.sourceType === 'auto_created';
+      const openingBal = cycle.openingBalance || {};
+      
+      // تحديد حالة الحالة
+      let statusClass = 'status-completed';
+      let statusText = '⚪ مكتملة';
+      let cardClass = 'cycle-completed';
+      
+      if (isOpening) {
+        statusClass = 'status-active';
+        statusText = '🟢 نشطة';
+        cardClass = 'cycle-active';
+      } else if (isClosed) {
+        statusClass = 'status-closed';
+        statusText = '🔴 مغلقة';
+        cardClass = 'cycle-closed';
+      }
+      
+      // شارة الإنشاء التلقائي
+      const autoBadge = isAutoCreated ? '<span class="cycle-auto-badge">🔄 تلقائي</span>' : '';
+      
+      // أزرار الإجراءات للدورات النشطة
+      const actionsHtml = isOpening ? `
+        <div class="cycle-actions">
+          <button class="btn-close-cycle" onclick="event.stopPropagation(); confirmCloseCycle('${secKey}', '${cycle.id}', ${cycle.number})">
+            🔴 إغلاق الدورة
+          </button>
+          <button class="btn-view-cycle" onclick="event.stopPropagation(); viewCycleDetails('${secKey}', '${cycle.id}')">
+            👁️ عرض التفاصيل
+          </button>
+        </div>
+      ` : '';
+      
+      return `<div class="cycle-card ${cardClass}" data-cycle-id="${cycle.id}">
+        <div class="cycle-header">
+          <span class="cycle-number">${autoBadge}الدورة #${cycle.number}</span>
+          <span class="cycle-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="cycle-dates">
+          <span>📅 البداية: ${fmtDate(cycle.startDate)}</span>
+          ${cycle.endDate ? `<span>📅 النهاية: ${fmtDate(cycle.endDate)}</span>` : ''}
+        </div>
+        ${openingBal.totalCost ? `
+        <div class="cycle-opening">
+          <div class="cycle-opening-title">💰 الرصيد الافتتاحي</div>
+          <div class="opening-details">
+            <div class="opening-row"><span>🐟 عدد الأسماك:</span><span>${(openingBal.fishCount || 0).toLocaleString('ar-EG')} قطعة</span></div>
+            <div class="opening-row"><span>تكلفة الزريعة:</span><span>${fmtCost(openingBal.fishCost || 0)}</span></div>
+            <div class="opening-row"><span>🌾 تكلفة العلف:</span><span>${fmtCost(openingBal.feedCost || 0)}</span></div>
+            <div class="opening-row"><span>💸 مصاريف أخرى:</span><span>${fmtCost(openingBal.otherCost || 0)}</span></div>
+            <div class="opening-row total"><span>📊 الإجمالي:</span><span>${fmtCost(openingBal.totalCost || 0)}</span></div>
+          </div>
+        </div>
+        ` : ''}
+        ${cycle.notes ? `<div class="cycle-notes">📝 ${cycle.notes}</div>` : ''}
+        ${actionsHtml}
+      </div>`;
+    }).join('');
+    
+    // إضافة شارة توضيحية إذا كان فيه دورة نشطة
+    const hasActiveCycle = cyclesArray.some(c => c.status === 'active');
+    if (hasActiveCycle) {
+      contentEl.innerHTML += `
+        <div class="sector-available-badge" style="margin-top:15px;">
+          ℹ️ لإجراء نقل زريعة لهذا القطاع، قم بإغلاق الدورة النشطة أولاً
+        </div>
+      `;
+    }
+  }
+  
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// إغلاق سجل الدورات
+function closeCyclesHistory() {
+  const modal = document.getElementById('cycles-history-modal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🔴 نظام إغلاق الدورات (Cycle Closing System)
+// ══════════════════════════════════════════════════════════════════
+
+// متغير مؤقت لتخزين بيانات الدورة المراد إغلاقها
+let pendingCloseCycle = null;
+
+// فتح نافذة تأكيد إغلاق الدورة
+function confirmCloseCycle(secKey, cycleId, cycleNumber) {
+  const sectorData = state.sectors[secKey] || {};
+  const cycles = sectorData.cycles || {};
+  const cycle = cycles[cycleId];
+  
+  if (!cycle) {
+    toast('❌ لم يتم العثور على بيانات الدورة', 'err');
+    return;
+  }
+  
+  if (cycle.status !== 'active') {
+    toast('⚠️ هذه الدورة ليست نشطة ولا يمكن إغلاقها', 'err');
+    return;
+  }
+  
+  // حفظ بيانات الدورة المؤقتة
+  pendingCloseCycle = {
+    secKey,
+    cycleId,
+    cycleNumber,
+    cycleData: cycle
+  };
+  
+  // ملء تفاصيل نافذة التأكيد
+  const detailsEl = document.getElementById('close-cycle-details');
+  if (detailsEl) {
+    const openingBal = cycle.openingBalance || {};
+    const sec = SECTORS[secKey];
+    
+    detailsEl.innerHTML = `
+      <div class="close-detail-row">
+        <span>📍 القطاع:</span>
+        <span style="color:${sec.color};font-weight:700;">${sec.icon} ${sec.name}</span>
+      </div>
+      <div class="close-detail-row">
+        <span>🔢 رقم الدورة:</span>
+        <span>#${cycleNumber}</span>
+      </div>
+      <div class="close-detail-row">
+        <span>📅 تاريخ البداية:</span>
+        <span>${fmtDate(cycle.startDate)}</span>
+      </div>
+      <div class="close-detail-row">
+        <span>🐟 عدد الأسماك الحالية:</span>
+        <span>${(cycle.currentFish || 0).toLocaleString('ar-EG')} قطعة</span>
+      </div>
+      ${openingBal.totalCost ? `
+      <div class="close-detail-row">
+        <span>💰 الرصيد الافتتاحي:</span>
+        <span style="color:var(--gold);">${fmtCost(openingBal.totalCost)}</span>
+      </div>
+      ` : ''}
+      <div class="close-detail-row warning">
+        <span>⚠️ سيتم إغلاق الدورة وتصبح البيانات للقراءة فقط</span>
+      </div>
+    `;
+  }
+  
+  // إظهار نافذة التأكيد
+  const modal = document.getElementById('close-cycle-modal');
+  if (modal) {
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// تنفيذ إغلاق الدورة في Firebase
+async function executeCloseCycle() {
+  if (!pendingCloseCycle) {
+    toast('❌ لا توجد دورة محددة للإغلاق', 'err');
+    return;
+  }
+  
+  const { secKey, cycleId, cycleNumber, cycleData } = pendingCloseCycle;
+  const btn = document.getElementById('confirm-close-btn');
+  
+  // تعطيل الزر أثناء التنفيذ
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ جاري الإغلاق...';
+  }
+  
+  try {
+    const db = window.db;
+    const now = new Date().toISOString();
+    const ts = Date.now();
+    
+    // 1. تحديث حالة الدورة إلى "مغلقة"
+    await window.dbUpdate(window.dbRef(db, `sectors/${secKey}/cycles/${cycleId}`), {
+      status: 'closed',
+      endDate: now,
+      closedAt: ts,
+      closedBy: currentUser?.uid || 'unknown'
+    });
+    
+    // 2. تسجيل عملية الإغلاق في الـ logs
+    const logRef = window.dbPush(window.dbRef(db, 'logs'));
+    await window.dbSet(logRef, {
+      type: 'cycle_closed',
+      sector: secKey,
+      cycleId: cycleId,
+      cycleNumber: cycleNumber,
+      fishCount: cycleData.currentFish || 0,
+      openingBalance: cycleData.openingBalance || {},
+      date: now,
+      notes: `تم إغلاق الدورة #${cycleNumber} في قطاع ${SECTORS[secKey].name}`,
+      ts: ts,
+      createdBy: currentUser?.uid || 'unknown'
+    });
+    
+    // 3. إغلاق النوافذ
+    cancelCloseCycle();
+    closeCyclesHistory();
+    
+    // 4. عرض تقرير إنتاج الدورة
+    setTimeout(() => {
+      showCycleProductionReport(secKey, cycleData);
+    }, 500);
+    
+    // 5. رسالة النجاح
+    toast(`✅ تم إغلاق الدورة #${cycleNumber} بنجاح!\n\n📍 القطاع: ${SECTORS[secKey].name}\n🔄 القطاع أصبح فارغاً ومتاحاً للنقل\n📊 جاري تحضير تقرير الإنتاج...`, 'ok');
+    
+    // 🔔 إشعار النجاح
+    showNotification({
+      type: 'success',
+      icon: '🔴',
+      title: 'تم إغلاق الدورة',
+      message: `الدورة #${cycleNumber} في ${SECTORS[secKey].name} تم إغلاقها بنجاح. القطاع متاح الآن لاستقبال زريعة جديدة.`,
+      duration: 6000,
+      onClick: () => showSectorCyclesHistory(secKey)
+    });
+    
+  } catch (error) {
+    console.error('Error closing cycle:', error);
+    toast(`❌ حدث خطأ أثناء إغلاق الدورة: ${error.message}`, 'err');
+    
+    // إعادة تفعيل الزر
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '🔴 تأكيد الإغلاق';
+    }
+  }
+}
+
+// إلغاء إغلاق الدورة
+function cancelCloseCycle() {
+  const modal = document.getElementById('close-cycle-modal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  
+  // مسح البيانات المؤقتة
+  pendingCloseCycle = null;
+  
+  // إعادة تعيين الزر
+  const btn = document.getElementById('confirm-close-btn');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '🔴 تأكيد الإغلاق';
+  }
+}
+
+// عرض تفاصيل دورة محددة (للاستقبال المستقبلي)
+function viewCycleDetails(secKey, cycleId) {
+  const sectorData = state.sectors[secKey] || {};
+  const cycles = sectorData.cycles || {};
+  const cycle = cycles[cycleId];
+  
+  if (!cycle) {
+    toast('❌ لم يتم العثور على بيانات الدورة', 'err');
+    return;
+  }
+  
+  // حالياً نفس سجل الدورات - يمكن توسيعه لاحقاً
+  console.log('View cycle details:', secKey, cycleId, cycle);
+  toast(`📋 تفاصيل الدورة #${cycle.number} - قيد التطوير`, 'info');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ↩️ نظام التراجع عن النقل (Undo Transfer System)
+// ══════════════════════════════════════════════════════════════════
+
+// متغير مؤقت لتخزين بيانات النقل المراد تراجعه
+let pendingUndoTransfer = null;
+
+// فتح نافذة تأكيد التراجع عن النقل
+function confirmUndoTransfer(transferData) {
+  // transferData يمكن أن يكون:
+  // 1. كائن نقل كامل من Firebase
+  // 2. أو معرف نقل (transferId) للبحث
+  
+  let transferRecord = null;
+  
+  if (typeof transferData === 'string') {
+    toast('⚠️ البحث عن النقل بالمعرف - قيد التطوير', 'info');
+    return;
+  } else if (typeof transferData === 'object') {
+    transferRecord = transferData;
+  }
+  
+  if (!transferRecord) {
+    toast('❌ لم يتم العثور على بيانات النقل', 'err');
+    return;
+  }
+  
+  // التحقق من أن النقل لم يتم تراجعه بالفعل
+  if (transferRecord.status === 'reversed') {
+    toast('⚠️ هذا النقل تم تراجعه بالفعل', 'err');
+    return;
+  }
+  
+  // حفظ البيانات المؤقتة
+  pendingUndoTransfer = transferRecord;
+  
+  // ملء تفاصيل نافذة التأكيد
+  const detailsEl = document.getElementById('undo-transfer-details');
+  if (detailsEl) {
+    const fromSec = SECTORS[transferRecord.fromSectorId] || { name: transferRecord.fromSectorId, icon: '📍' };
+    const toSec = SECTORS[transferRecord.toSectorId] || { name: transferRecord.toSectorId, icon: '📍' };
+    
+    detailsEl.innerHTML = `
+      <div class="undo-detail-row">
+        <span>🔢 رقم العملية:</span>
+        <span>${transferRecord.id || 'N/A'}</span>
+      </div>
+      <div class="undo-detail-row">
+        <span>📅 تاريخ النقل:</span>
+        <span>${fmtDate(transferRecord.transferDate)}</span>
+      </div>
+      <div class="undo-detail-row">
+        <span>📍 من القطاع:</span>
+        <span style="color:var(--cyan);font-weight:700;">${fromSec.icon} ${fromSec.name}</span>
+      </div>
+      <div class="undo-detail-row">
+        <span>🎯 إلى القطاع:</span>
+        <span style="color:var(--teal);font-weight:700;">${toSec.icon} ${toSec.name}</span>
+      </div>
+      <div class="undo-detail-row">
+        <span>🐟 عدد الأسماك المنقولة:</span>
+        <span style="color:var(--gold);font-weight:700;">${(transferRecord.fishCount || 0).toLocaleString('ar-EG')} قطعة</span>
+      </div>
+      <div class="undo-detail-row">
+        <span>💰 التكلفة الإجمالية:</span>
+        <span style="color:var(--green);font-weight:700;">${fmtCost(transferRecord.totalCost || 0)}</span>
+      </div>
+      <div class="undo-detail-row">
+        <span>📋 نوع النقل:</span>
+        <span>${transferRecord.isPartial ? 'نقل جزئي 📦' : 'نقل كامل ✅'}</span>
+      </div>
+    `;
+  }
+  
+  // إظهار نافذة التأكيد
+  const modal = document.getElementById('undo-transfer-modal');
+  if (modal) {
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+// تنفيذ التراجع عن النقل في Firebase
+async function executeUndoTransfer() {
+  if (!pendingUndoTransfer) {
+    toast('❌ لا يوجد نقل محدد للتراجع', 'err');
+    return;
+  }
+  
+  const transferRecord = pendingUndoTransfer;
+  const btn = document.getElementById('confirm-undo-btn');
+  
+  // تعطيل الزر أثناء التنفيذ
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '⏳ جاري التراجع...';
+  }
+  
+  try {
+    const db = window.db;
+    const now = new Date().toISOString();
+    const ts = Date.now();
+    
+    const { fromSectorId, toSectorId, fromBatchId, fishCount, originalCount, isPartial, toCycleId } = transferRecord;
+    
+    // ════════════════════════════════════════════════
+    // الخطوة 1: إعادة تفعيل دفعة الزريعة المصدرية
+    // ════════════════════════════════════════════════
+    const sourceBatchRef = window.dbRef(db, `sectors/${fromSectorId}/zaria/${fromBatchId}`);
+    const sourceBatchSnap = await window.dbGet(sourceBatchRef);
+    
+    if (sourceBatchSnap.exists()) {
+      const sourceBatch = sourceBatchSnap.val();
+      
+      if (isPartial) {
+        // النقل الجزئي: إضافة الكمية المنقولة للمتبقي
+        const currentQty = sourceBatch.qty || 0;
+        const restoredQty = currentQty + (fishCount || 0);
+        
+        await window.dbUpdate(sourceBatchRef, {
+          qty: restoredQty,
+          status: 'active',
+          lastUndoDate: now,
+          lastUndoQty: fishCount,
+          notes: (sourceBatch.notes || '') + ` | تم استرجاع ${fishCount} قطعة يوم ${now}`
+        });
+      } else {
+        // النقل الكامل: إعادة تفعيل الدفعة بالكامل
+        await window.dbUpdate(sourceBatchRef, {
+          qty: originalCount || sourceBatch.qty || fishCount,
+          status: 'active',
+          transferredTo: null,
+          transferredCycleId: null,
+          undoDate: now,
+          notes: (sourceBatch.notes || '') + ` | تم إلغاء النقل واسترجاع الدفعة يوم ${now}`
+        });
+      }
+      
+      console.log(`✅ Restored source batch ${fromBatchId}`);
+    } else {
+      console.warn(`⚠️ Source batch not found: ${fromBatchId}`);
+    }
+    
+    // ════════════════════════════════════════════════
+    // الخطوة 2: إغلاق/حذف الدورة في القطاع المستهدف
+    // ════════════════════════════════════════════════
+    if (toCycleId) {
+      const targetCycleRef = window.dbRef(db, `sectors/${toSectorId}/cycles/${toCycleId}`);
+      const targetCycleSnap = await window.dbGet(targetCycleRef);
+      
+      if (targetCycleSnap.exists()) {
+        // تحديث حالة الدورة إلى "ملغاة" بدلاً من الحذف (للأرشفة)
+        await window.dbUpdate(targetCycleRef, {
+          status: 'reversal_cancelled',
+          reversalDate: now,
+          reversalReason: 'تم التراجع عن عملية النقل',
+          reversedBy: currentUser?.uid || 'unknown'
+        });
+        
+        console.log(`✅ Closed target cycle ${toCycleId}`);
+      } else {
+        console.warn(`⚠️ Target cycle not found: ${toCycleId}`);
+      }
+    }
+    
+    // ════════════════════════════════════════════════
+    // الخطوة 3: تسجيل عملية التراجع في الـ logs
+    // ════════════════════════════════════════════════
+    const logRef = window.dbPush(window.dbRef(db, 'logs'));
+    await window.dbSet(logRef, {
+      type: 'transfer_undo',
+      originalTransferId: transferRecord.id,
+      fromSectorId: fromSectorId,
+      toSectorId: toSectorId,
+      fromBatchId: fromBatchId,
+      fishCount: fishCount,
+      totalCost: transferRecord.totalCost,
+      isPartial: isPartial,
+      date: now,
+      notes: `تم التراجع عن نقل ${(fishCount || 0).toLocaleString('ar-EG')} قطعة من ${SECTORS[fromSectorId]?.name || fromSectorId} → ${SECTORS[toSectorId]?.name || toSectorId}`,
+      ts: ts,
+      undoneBy: currentUser?.uid || 'unknown'
+    });
+    
+    // ════════════════════════════════════════════════
+    // الخطوة 4: إغلاق النوافذ وعرض رسالة النجاح
+    // ════════════════════════════════════════════════
+    cancelUndoTransfer();
+    
+    const successMsg = isPartial
+      ? `✅ تم التراجع عن النقل الجزئي بنجاح!\n\n↩️ تم استرجاع ${(fishCount || 0).toLocaleString('ar-EG')} قطعة لقطاع ${SECTORS[fromSectorId]?.name || fromSectorId}\n🔄 الدورة في القطاع المستهدف أُغلقت`
+      : `✅ تم التراجع عن النقل الكامل بنجاح!\n\n↩️ دفعة الزريعة عادت نشطة في ${SECTORS[fromSectorId]?.name || fromSectorId}\n🔄 الدورة في القطاع المستهدف أُغلقت`;
+    
+    toast(successMsg, 'ok');
+    
+    // 🔔 إشعار النجاح
+    showNotification({
+      type: 'success',
+      icon: '↩️',
+      title: 'تم التراجع عن النقل',
+      message: `تم استرجاع ${(fishCount || 0).toLocaleString('ar-EG')} قطعة. القطاع المصدر عاد لنشاطه.`,
+      duration: 6000
+    });
+    
+    // تحديث الواجهة
+    setTimeout(() => {
+      renderSectors();
+    }, 500);
+    
+  } catch (error) {
+    console.error('Error undoing transfer:', error);
+    toast(`❌ حدث خطأ أثناء التراجع: ${error.message}`, 'err');
+    
+    // إعادة تفعيل الزر
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '↩️ تأكيد التراجع';
+    }
+  }
+}
+
+// إلغاء التراجع
+function cancelUndoTransfer() {
+  const modal = document.getElementById('undo-transfer-modal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  
+  // مسح البيانات المؤقتة
+  pendingUndoTransfer = null;
+  
+  // إعادة تعيين الزر
+  const btn = document.getElementById('confirm-undo-btn');
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '↩️ تأكيد التراجع';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 📊 نظام تقرير إنتاج الدورة (Cycle Production Report)
+// ══════════════════════════════════════════════════════════════════
+
+// متغيرات تقرير الإنتاج الحالي
+let currentReportData = null;
+let currentReportUnit = 'kg'; // الوحدة الحالية: kg | ton | box
+
+// ثوابت التحويل
+const UNIT_CONVERSION = {
+  kg: { toKg: 1, label: 'كيلو', symbol: 'كجم' },
+  ton: { toKg: 1000, label: 'طن', symbol: 'طن' },
+  box: { toKg: 5, label: 'بوكشة', symbol: 'بوكشة' } // بوكشة = 5 كيلو (يمكن تعديله)
+};
+
+// حساب إنتاج الدورة من بيانات القطاع
+function calculateCycleProduction(secKey, cycleData) {
+  const sectorData = state.sectors[secKey] || {};
+  const fish = sectorData.fish || {};
+  
+  // تجميع الأسماك حسب النوع
+  const fishTypes = {};
+  let totalWeightKg = 0;
+  let totalCount = 0;
+  
+  Object.values(fish).forEach(fishItem => {
+    if (!fishItem) return;
+    
+    const type = fishItem.type || fishItem.fishType || 'سمك عادي';
+    const weight = parseFloat(fishItem.kg) || parseFloat(fishItem.weight) || 0;
+    const qty = parseInt(fishItem.qty) || 1;
+    
+    if (!fishTypes[type]) {
+      fishTypes[type] = {
+        type: type,
+        icon: getFishIcon(type),
+        totalWeight: 0,
+        count: 0,
+        items: []
+      };
+    }
+    
+    fishTypes[type].totalWeight += weight;
+    fishTypes[type].count += qty;
+    fishTypes[type].items.push(fishItem);
+    
+    totalWeightKg += weight;
+    totalCount += qty;
+  });
+  
+  // تحويل لمصفوفة مع حساب النسب المئوية
+  const typesArray = Object.values(fishTypes).map(ft => ({
+    ...ft,
+    percent: totalWeightKg > 0 ? ((ft.totalWeight / totalWeightKg) * 100).toFixed(1) : 0
+  }));
+  
+  // ترتيب تنازلي حسب الوزن
+  typesArray.sort((a, b) => b.totalWeight - a.totalWeight);
+  
+  return {
+    sectorKey,
+    sectorName: SECTORS[secKey]?.name || secKey,
+    cycleNumber: cycleData?.number || 0,
+    startDate: cycleData?.startDate,
+    endDate: new Date().toISOString(),
+    totalWeightKg,
+    totalCount,
+    fishTypes: typesArray,
+    openingBalance: cycleData?.openingBalance || {}
+  };
+}
+
+// الحصول على أيقونة نوع السمك
+function getFishIcon(type) {
+  const icons = {
+    'بلطي': '🐟',
+    'بلطي نيلي': '🐟',
+    'مبروك': '🐠',
+    'قراميط': '🐡',
+    'بوري': '🐟',
+    'شعور': '🐠',
+    'سبيط': '🐡',
+    ' Dennise': '🐠',
+    'تيلابيا': '🐟',
+    'سلمون': '🐟',
+    'قاروص': '🐠',
+    'سمك عادي': '🐟'
+  };
+  return icons[type] || '🐟';
+}
+
+// عرض تقرير إنتاج الدورة
+function showCycleProductionReport(secKey, cycleData) {
+  const modal = document.getElementById('production-report-modal');
+  if (!modal) return;
+  
+  // حساب البيانات
+  currentReportData = calculateCycleProduction(secKey, cycleData);
+  currentReportUnit = 'kg';
+  
+  // تحديث العنوان
+  const titleEl = document.getElementById('report-sector-name');
+  if (titleEl) {
+    titleEl.textContent = `قطاع ${currentReportData.sectorName} | الدورة #${currentReportData.cycleNumber}`;
+  }
+  
+  // عرض الملخص والجدول
+  renderProductionSummary();
+  renderFishTypesTable();
+  
+  // تحديث معلومات التذييل
+  updateReportFooter(cycleData);
+  
+  // إظهار المودال
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// عرض بطاقات ملخص الإنتاج
+function renderProductionSummary() {
+  if (!currentReportData) return;
+  
+  const summaryEl = document.getElementById('production-summary');
+  if (!summaryEl) return;
+  
+  const { totalWeightKg, totalCount } = currentReportData;
+  
+  // حساب القيم بالوحدات المختلفة
+  const conversion = UNIT_CONVERSION[currentReportUnit];
+  const displayWeight = totalWeightKg / conversion.toKg;
+  const tons = totalWeightKg / 1000;
+  const boxes = totalWeightKg / UNIT_CONVERSION.box.toKg;
+  
+  summaryEl.innerHTML = `
+    <div class="summary-card kg">
+      <div class="summary-card-icon">⚖️</div>
+      <div class="summary-card-value">${formatNumber(displayWeight, 2)}</div>
+      <div class="summary-card-label">${conversion.symbol}</div>
+    </div>
+    <div class="summary-card ton">
+      <div class="summary-card-icon">🏗️</div>
+      <div class="summary-card-value">${formatNumber(tons, 3)}</div>
+      <div class="summary-card-label">طن</div>
+    </div>
+    <div class="summary-card box">
+      <div class="summary-card-icon">📦</div>
+      <div class="summary-card-value">${formatNumber(boxes, 1)}</div>
+      <div class="summary-card-label">بوكشة (${UNIT_CONVERSION.box.toKg} كجم)</div>
+    </div>
+  `;
+}
+
+// عرض جدول أنواع السمك
+function renderFishTypesTable() {
+  if (!currentReportData) return;
+  
+  const tableEl = document.getElementById('fish-types-table');
+  if (!tableEl) return;
+  
+  const { fishTypes, totalWeightKg } = currentReportData;
+  const conversion = UNIT_CONVERSION[currentReportUnit];
+  
+  if (fishTypes.length === 0) {
+    tableEl.innerHTML = `
+      <div class="report-empty-state">
+        <div class="report-empty-icon">🐟</div>
+        <div class="report-empty-text">لا يوجد إنتاج مسجل لهذه الدورة</div>
+        <div class="report-empty-subtext">لم يتم تسجيل أي أسماك خلال هذه الدورة</div>
+      </div>
+    `;
+    return;
+  }
+  
+  // صفوف الأنواع
+  const rowsHtml = fishTypes.map(ft => {
+    const displayWeight = ft.totalWeight / conversion.toKg;
+    return `
+      <div class="fish-type-row">
+        <div class="fish-type-name">
+          <span class="fish-type-icon">${ft.icon}</span>
+          ${ft.type}
+        </div>
+        <div class="fish-type-qty">${ft.count.toLocaleString('ar-EG')}</div>
+        <div class="fish-type-weight">${formatNumber(displayWeight, 2)} ${conversion.symbol}</div>
+        <div class="fish-type-percent">${ft.percent}%</div>
+      </div>
+    `;
+  }).join('');
+  
+  // صف الإجمالي
+  const totalDisplayWeight = totalWeightKg / conversion.toKg;
+  tableEl.innerHTML = `
+    ${rowsHtml}
+    <div class="fish-type-row fish-type-total">
+      <div class="fish-type-name">📊 الإجمالي الكلي</div>
+      <div class="fish-type-qty">${currentReportData.totalCount.toLocaleString('ar-EG')}</div>
+      <div class="fish-type-weight">${formatNumber(totalDisplayWeight, 2)} ${conversion.symbol}</div>
+      <div class="fish-type-percent">100%</div>
+    </div>
+  `;
+}
+
+// تبديل وحدة القياس
+function switchReportUnit(unit) {
+  if (!UNIT_CONVERSION[unit]) return;
+  
+  currentReportUnit = unit;
+  
+  // تحديث أزرار التبديل
+  document.querySelectorAll('.unit-toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.unit === unit);
+  });
+  
+  // إعادة عرض البيانات
+  renderProductionSummary();
+  renderFishTypesTable();
+}
+
+// تحديث ذيل التقرير
+function updateReportFooter(cycleData) {
+  const dateEl = document.getElementById('report-date-info');
+  const durationEl = document.getElementById('report-cycle-duration');
+  
+  if (dateEl) {
+    dateEl.textContent = `📅 تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}`;
+  }
+  
+  if (durationEl && cycleData?.startDate) {
+    const start = new Date(cycleData.startDate);
+    const end = new Date();
+    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 30) {
+      const months = Math.floor(diffDays / 30);
+      const days = diffDays % 30;
+      durationEl.textContent = `⏱️ مدة الدورة: ${months} شهر و${days} يوم`;
+    } else {
+      durationEl.textContent = `⏱️ مدة الدورة: ${diffDays} يوم`;
+    }
+  }
+}
+
+// إغلاق تقرير الإنتاج
+function closeProductionReport() {
+  const modal = document.getElementById('production-report-modal');
+  if (modal) {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  currentReportData = null;
+}
+
+// طباعة التقرير (تبسيط - يمكن تطويرها لاحقاً)
+function printProductionReport() {
+  if (!currentReportData) return;
+  
+  toast('🖨️ جاري تحضير الطباعة...', 'info');
+  
+  // يمكن هنا إضافة منطق طباعة حقيقي أو تصدير PDF
+  setTimeout(() => {
+    window.print();
+  }, 500);
+}
+
+// تنسيق الأرقام
+function formatNumber(num, decimals = 0) {
+  if (isNaN(num)) return '0';
+  return Number(num).toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// expose transfer & cycle functions to global scope
+// ══════════════════════════════════════════════════════════════════
+window.openTransferModal = openTransferModal;
+window.closeTransferModal = closeTransferModal;
+window.selectTransferBatch = selectTransferBatch;
+window.onTargetSectorChange = onTargetSectorChange;
+window.onTransferQtyChange = onTransferQtyChange;
+window.executeTransfer = executeTransfer;
+window.showTransfersHistory = showTransfersHistory;
+window.showSectorCyclesHistory = showSectorCyclesHistory;
+window.closeCyclesHistory = closeCyclesHistory;
+window.renderTransferBatchList = renderTransferBatchList;
+window.renderTargetSectorsList = renderTargetSectorsList;
+window.togglePartialTransfer = togglePartialTransfer;
+
+// Cycle Closing Functions
+window.confirmCloseCycle = confirmCloseCycle;
+window.executeCloseCycle = executeCloseCycle;
+window.cancelCloseCycle = cancelCloseCycle;
+window.viewCycleDetails = viewCycleDetails;
+
+// Undo Transfer Functions
+window.confirmUndoTransfer = confirmUndoTransfer;
+window.executeUndoTransfer = executeUndoTransfer;
+window.cancelUndoTransfer = cancelUndoTransfer;
+
+// Production Report Functions
+window.showCycleProductionReport = showCycleProductionReport;
+window.closeProductionReport = closeProductionReport;
+window.switchReportUnit = switchReportUnit;
+window.printProductionReport = printProductionReport;
+
+// ══════════════════════════════════════════════════════════════════
+// 🔔 نظام الإشعارات (Notification System)
+// ══════════════════════════════════════════════════════════════════
+
+// إظهار إشعار
+function showNotification(options) {
+  const container = document.getElementById('notification-container');
+  if (!container) return;
+  
+  const {
+    type = 'info',       // 'success' | 'info' | 'warning' | 'error'
+    icon = '🔔',         // أيقونة الإشعار
+    title = 'إشعار',     // عنوان الإشعار
+    message = '',         // نص الرسالة
+    duration = 5000,      // مدة العرض بالميلي ثانية
+    onClick = null,       // دالة عند الضغط
+    closable = true,      // إمكانية الإغلاق
+    actions = ''          // HTML لأزرار إضافية (مثل زر التراجع)
+  } = options;
+  
+  const notifId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  
+  const notifEl = document.createElement('div');
+  notifEl.className = `notification ${type}`;
+  notifEl.id = notifId;
+  notifEl.innerHTML = `
+    <div class="notification-icon">${icon}</div>
+    <div class="notification-content">
+      <div class="notification-title">${title}</div>
+      ${message ? `<div class="notification-message">${message}</div>` : ''}
+      ${actions ? `<div class="notification-actions">${actions}</div>` : ''}
+      <div class="notification-time">🕐 ${timeStr}</div>
+    </div>
+    ${closable ? '<span class="notification-close" onclick="closeNotification(\'' + notifId + '\')">✕</span>' : ''}
+  `;
+  
+  // حدث الضغط
+  if (onClick) {
+    notifEl.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('notification-close')) {
+        onClick();
+        closeNotification(notifId);
+      }
+    });
+  }
+  
+  container.appendChild(notifEl);
+  
+  // إغلاق تلقائي بعد المدة المحددة
+  if (duration > 0) {
+    setTimeout(() => closeNotification(notifId), duration);
+  }
+  
+  return notifId;
+}
+
+// إغلاق إشعار
+function closeNotification(notifId) {
+  const notifEl = document.getElementById(notifId);
+  if (!notifEl) return;
+  
+  notifEl.classList.add('hiding');
+  setTimeout(() => {
+    if (notifEl.parentNode) {
+      notifEl.parentNode.removeChild(notifEl);
+    }
+  }, 300);
+}
+
+// إشعارات جاهزة للنقل
+function notifyTransferSuccess(transferData) {
+  // إنشاء كائن بيانات النقل الكامل للتراجع
+  const fullTransferData = {
+    ...transferData,
+    id: `TR-${Date.now()}`,
+    transferDate: new Date().toISOString()
+  };
+  
+  showNotification({
+    type: 'success',
+    icon: '✅',
+    title: 'تمت عملية النقل بنجاح!',
+    message: `نقل ${(transferData.fishCount || 0).toLocaleString('ar-EG')} قطعة من ${SECTORS[transferData.fromSectorId]?.name || ''} إلى ${SECTORS[transferData.toSectorId]?.name || ''}\nالتكلفة الكلية: ${fmtCost(transferData.totalCost || 0)} ج.م`,
+    duration: 10000, // مدة أطول عشان المستخدم يشوف زر التراجع
+    onClick: () => showPage('transfers'),
+    // إضافة زر التراجع
+    actions: `
+      <button class="btn-undo-transfer" onclick="event.stopPropagation(); confirmUndoTransfer(window.lastTransferRecord)">
+        ↩️ تراجع عن النقل
+      </button>
+    `
+  });
+  
+  // حفظ بيانات النقل للاستخدام في التراجع
+  window.lastTransferRecord = fullTransferData;
+}
+
+function notifyTransferPartial(transferData) {
+  // إنشاء كائن بيانات النقل الكامل للتراجع
+  const fullTransferData = {
+    ...transferData,
+    id: `TR-${Date.now()}`,
+    transferDate: new Date().toISOString()
+  };
+  
+  showNotification({
+    type: 'warning',
+    icon: '⚡',
+    title: 'تم النقل الجزئي!',
+    message: `تم نقل ${(transferData.fishCount || 0).toLocaleString('ar-EG')} قطعة (من أصل ${(transferData.originalCount || 0).toLocaleString('ar-EG')})\nالمتبقي في المصدر: ${((transferData.originalCount || 0) - (transferData.fishCount || 0)).toLocaleString('ar-EG')} قطعة`,
+    duration: 10000,
+    onClick: () => showPage('transfers'),
+    // إضافة زر التراجع
+    actions: `
+      <button class="btn-undo-transfer" onclick="event.stopPropagation(); confirmUndoTransfer(window.lastTransferRecord)">
+        ↩️ تراجع عن النقل
+      </button>
+    `
+  });
+  
+  // حفظ بيانات النقل للاستخدام في التراجع
+  window.lastTransferRecord = fullTransferData;
+}
+
+function notifyTransferError(errorMsg) {
+  showNotification({
+    type: 'error',
+    icon: '❌',
+    title: 'فشل عملية النقل!',
+    message: errorMsg || 'حدث خطأ أثناء تنفيذ عملية النقل',
+    duration: 6000
+  });
+}
+
+function notifyInfo(title, message) {
+  showNotification({
+    type: 'info',
+    icon: 'ℹ️',
+    title: title,
+    message: message,
+    duration: 4000
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 📊 تقارير عمليات النقل (Transfer Reports)
+// ══════════════════════════════════════════════════════════════════
+
+// حالة بيانات النقل
+let transfersDataState = {
+  transfers: {},
+  loaded: false
+};
+
+// تحميل بيانات النقل من Firebase
+async function loadTransfersData() {
+  try {
+    await new Promise((resolve) => {
+      window.dbOnValue(window.dbRef(db, 'transfers'), (snap) => {
+        transfersDataState.transfers = snap.val() || {};
+        transfersDataState.loaded = true;
+        renderTransfersReports();
+        renderTransfersSummary();
+        resolve();
+      });
+    });
+  } catch (error) {
+    console.error('Error loading transfers:', error);
+    toast('❌ خطأ في تحميل بيانات النقل', 'err');
+  }
+}
+
+// تحديث البيانات
+function refreshTransfersData() {
+  loadTransfersData();
+  toast('🔄 تم تحديث بيانات النقل', 'ok');
+}
+
+// عرض ملخص الإحصائيات
+function renderTransfersSummary() {
+  const container = document.getElementById('transfers-summary');
+  if (!container) return;
+  
+  const transfers = Object.values(transfersDataState.transfers);
+  
+  if (transfers.length === 0) {
+    container.innerHTML = '<div class="transfer-empty">لا توجد عمليات نقل مسجلة حتى الآن</div>';
+    return;
+  }
+  
+  const totalTransfers = transfers.length;
+  const fullTransfers = transfers.filter(t => !t.isPartial).length;
+  const partialTransfers = transfers.filter(t => t.isPartial).length;
+  const totalFish = transfers.reduce((s, t) => s + (t.fishCount || 0), 0);
+  const totalCost = transfers.reduce((s, t) => s + (t.totalCost || 0), 0);
+  
+  container.innerHTML = `
+    <div class="transfer-stat-card">
+      <div class="transfer-stat-value">${totalTransfers}</div>
+      <div class="transfer-stat-label">📊 إجمالي العمليات</div>
+    </div>
+    <div class="transfer-stat-card">
+      <div class="transfer-stat-value" style="color:#00b894;">${fullTransfers}</div>
+      <div class="transfer-stat-label">✅ نقل كامل</div>
+    </div>
+    <div class="transfer-stat-card">
+      <div class="transfer-stat-value" style="color:#fdcb6e;">${partialTransfers}</div>
+      <div class="transfer-stat-label">⚡ نقل جزئي</div>
+    </div>
+    <div class="transfer-stat-card">
+      <div class="transfer-stat-value" style="color:#74b9ff;">${totalFish.toLocaleString('ar-EG')}</div>
+      <div class="transfer-stat-label">🐟 إجمالي الأسماك</div>
+    </div>
+    <div class="transfer-stat-card">
+      <div class="transfer-stat-value" style="color:#a29bfe;">${fmtCost(totalCost)}</div>
+      <div class="transfer-stat-label">💰 إجمالي التكلفة</div>
+    </div>
+  `;
+}
+
+// عرض قائمة عمليات النقل
+function renderTransfersReports() {
+  const container = document.getElementById('transfers-list');
+  const countEl = document.getElementById('trf-count');
+  
+  if (!container) return;
+  
+  let transfers = Object.entries(transfersDataState.transfers)
+    .map(([id, t]) => ({ id, ...t }))
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  
+  // تطبيق الفلاتر
+  const typeFilter = document.getElementById('trf-type')?.value || 'all';
+  const fromSecFilter = document.getElementById('trf-from-sec')?.value || 'all';
+  const toSecFilter = document.getElementById('trf-to-sec')?.value || 'all';
+  const fromDate = document.getElementById('trf-from')?.value || '';
+  const toDate = document.getElementById('trf-to')?.value || '';
+  
+  if (typeFilter !== 'all') {
+    transfers = transfers.filter(t => typeFilter === 'full' ? !t.isPartial : t.isPartial);
+  }
+  if (fromSecFilter !== 'all') {
+    transfers = transfers.filter(t => t.fromSectorId === fromSecFilter);
+  }
+  if (toSecFilter !== 'all') {
+    transfers = transfers.filter(t => t.toSectorId === toSecFilter);
+  }
+  if (fromDate) {
+    transfers = transfers.filter(t => t.transferDate >= fromDate);
+  }
+  if (toDate) {
+    transfers = transfers.filter(t => t.transferDate <= toDate);
+  }
+  
+  // تحديث العداد
+  if (countEl) {
+    countEl.textContent = `عدد العمليات: ${transfers.length} من ${Object.keys(transfersDataState.transfers).length}`;
+  }
+  
+  if (transfers.length === 0) {
+    container.innerHTML = '<div class="transfer-empty">لا توجد عمليات نقل مطابقة للفلات المحددة</div>';
+    return;
+  }
+  
+  container.innerHTML = transfers.map(trf => {
+    const fromSec = SECTORS[trf.fromSectorId] || { name: 'غير معروف', icon: '❓', color: '#888' };
+    const toSec = SECTORS[trf.toSectorId] || { name: 'غير معروف', icon: '❓', color: '#888' };
+    
+    return `
+      <div class="transfer-item">
+        <div class="transfer-item-header">
+          <span class="transfer-item-id">${trf.id}</span>
+          <span class="transfer-item-badge ${trf.isPartial ? 'badge-partial' : 'badge-full'}">
+            ${trf.isPartial ? '⚡ جزئي' : '✅ كامل'}
+          </span>
+        </div>
+        
+        <div class="transfer-item-route">
+          <div class="route-from">${fromSec.icon} ${fromSec.name}</div>
+          <div class="route-arrow">→</div>
+          <div class="route-to">${toSec.icon} ${toSec.name}</div>
+        </div>
+        
+        <div class="transfer-item-details">
+          <div class="detail-chip"><span>🐟 عدد الأسماك</span><span>${(trf.fishCount || 0).toLocaleString('ar-EG')}</span></div>
+          <div class="detail-chip"><span>💰 تكلفة الزريعة</span><span>${fmtCost(trf.fishCost || 0)}</span></div>
+          <div class="detail-chip"><span>🌾 تكلفة العلف</span><span>${fmtCost(trf.feedCost || 0)}</span></div>
+          <div class="detail-chip"><span>💸 مصاريف أخرى</span><span>${fmtCost(trf.otherCost || 0)}</span></div>
+        </div>
+        
+        <div class="transfer-item-total">
+          <span class="total-label">📊 الإجمالي:</span>
+          <span class="total-value">${fmtCost(trf.totalCost || 0)} ج.م</span>
+        </div>
+        
+        ${trf.fishType ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;">نوع السمك: ${trf.fishType}</div>` : ''}
+        
+        <div class="transfer-item-date">📅 ${fmtDate(trf.transferDate)} ${trf.notes ? '| ' + trf.notes : ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// إعادة ضبط فلاتر التقارير
+function resetTrfFilters() {
+  const trfType = document.getElementById('trf-type');
+  const trfFromSec = document.getElementById('trf-from-sec');
+  const trfToSec = document.getElementById('trf-to-sec');
+  const trfFrom = document.getElementById('trf-from');
+  const trfTo = document.getElementById('trf-to');
+  
+  if (trfType) trfType.value = 'all';
+  if (trfFromSec) trfFromSec.value = 'all';
+  if (trfToSec) trfToSec.value = 'all';
+  if (trfFrom) trfFrom.value = '';
+  if (trfTo) trfTo.value = '';
+  
+  renderTransfersReports();
+}
+
+// ملء قوائم القطاعات في فلاتر التقارير
+function populateTransferFilters() {
+  const fromSelect = document.getElementById('trf-from-sec');
+  const toSelect = document.getElementById('trf-to-sec');
+  
+  if (!fromSelect || !toSelect) return;
+  
+  let optionsHtml = '<option value="all">🌊 كل القطاعات</option>';
+  Object.entries(SECTORS).forEach(([key, sec]) => {
+    optionsHtml += `<option value="${key}">${sec.icon} ${sec.name}</option>`;
+  });
+  
+  fromSelect.innerHTML = optionsHtml;
+  toSelect.innerHTML = optionsHtml;
+}
+
+// تصدير تقرير النقل PDF
+function exportTransfersPDF() {
+  const transfers = Object.entries(transfersDataState.transfers)
+    .map(([id, t]) => ({ id, ...t }))
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  
+  if (transfers.length === 0) {
+    toast('❌ لا توجد بيانات للتصدير', 'err');
+    return;
+  }
+  
+  let html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+      <meta charset="UTF-8">
+      <title>تقرير عمليات نقل الزريعة</title>
+      <style>
+        body { font-family: 'Cairo', sans-serif; padding: 20px; background: #f5f5f5; direction: rtl; }
+        h1 { color: #6c5ce7; text-align: center; margin-bottom: 20px; }
+        h2 { color: #333; margin-top: 30px; border-bottom: 2px solid #6c5ce7; padding-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; background: white; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+        th { background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: white; padding: 12px; text-align: right; }
+        td { padding: 10px; border-bottom: 1px solid #eee; text-align: right; }
+        tr:hover { background: #f8f9ff; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 20px 0; }
+        .summary-card { background: linear-gradient(135deg,#6c5ce711,#a29bfe22); border: 1px solid #6c5ce733; border-radius: 12px; padding: 15px; text-align: center; }
+        .summary-value { font-size: 24px; font-weight: 900; color: #6c5ce7; }
+        .summary-label { color: #666; font-size: 12px; margin-top: 5px; }
+        .footer { text-align: center; margin-top: 30px; color: #888; font-size: 12px; }
+        @media print { body { background: white; } }
+      </style>
+    </head>
+    <body>
+      <h1>📊 تقرير عمليات نقل الزريعة</h1>
+      <p style="text-align:center;color:#666;">تاريخ التوليد: ${new Date().toLocaleDateString('ar-EG')}</p>
+      
+      <div class="summary">
+        <div class="summary-card"><div class="summary-value">${transfers.length}</div><div class="summary-label">إجمالي العمليات</div></div>
+        <div class="summary-card"><div class="summary-value">${transfers.reduce((s,t)=>s+(t.fishCount||0),0).toLocaleString('ar-EG')}</div><div class="summary-label">إجمالي الأسماك</div></div>
+        <div class="summary-card"><div class="summary-value">${fmtCost(transfers.reduce((s,t)=>s+(t.totalCost||0),0))}</div><div class="summary-label">إجمالي التكلفة</div></div>
+      </div>
+      
+      <h2>📋 تفاصيل العمليات</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>رقم العملية</th>
+            <th>التاريخ</th>
+            <th>من القطاع</th>
+            <th>إلى القطاع</th>
+            <th>النوع</th>
+            <th>عدد الأسماك</th>
+            <th>التكلفة</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${transfers.map(t => `
+            <tr>
+              <td>${t.id}</td>
+              <td>${fmtDate(t.transferDate)}</td>
+              <td>${SECTORS[t.fromSectorId]?.name || '-'}</td>
+              <td>${SECTORS[t.toSectorId]?.name || '-'}</td>
+              <td>${t.isPartial ? '⚡ جزئي' : '✅ كامل'}</td>
+              <td>${(t.fishCount||0).toLocaleString('ar-EG')}</td>
+              <td>${fmtCost(t.totalCost||0)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <div class="footer">تم إنشاء هذا التقرير بواسطة نظام إدارة المزارع السمكية © ${new Date().getFullYear()}</div>
+    </body>
+    </html>
+  `;
+  
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+  
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+  
+  toast('📄 تم فتح تقرير النقل - اختر "حفظ كـ PDF"', 'ok');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// expose notification & reports functions to global scope
+// ══════════════════════════════════════════════════════════════════
+window.showNotification = showNotification;
+window.closeNotification = closeNotification;
+window.notifyTransferSuccess = notifyTransferSuccess;
+window.notifyTransferPartial = notifyTransferPartial;
+window.notifyTransferError = notifyTransferError;
+window.notifyInfo = notifyInfo;
+window.loadTransfersData = loadTransfersData;
+window.refreshTransfersData = refreshTransfersData;
+window.renderTransfersReports = renderTransfersReports;
+window.renderTransfersSummary = renderTransfersSummary;
+window.resetTrfFilters = resetTrfFilters;
+window.populateTransferFilters = populateTransferFilters;
+window.exportTransfersPDF = exportTransfersPDF;
 
 // ══════════════════════════════════════════════════════════════════
 // PWA SPLASH SCREEN — hide on load (isolated script at top handles this)
