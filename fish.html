@@ -1437,6 +1437,11 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
   color: #b2bec3; 
 }
 
+.status-active {
+  background: rgba(0,214,160,0.15);
+  color: #00b894;
+}
+
 /* Sector available badge after close */
 .sector-available-badge {
   display: inline-flex;
@@ -1992,6 +1997,207 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
 .report-empty-subtext {
   font-size: 11px;
   opacity: 0.7;
+}
+
+/* ══════════════════════════════════════════ */
+/* 📊 Enhanced Production Report Styles */
+/* ══════════════════════════════════════════ */
+
+/* Summary Cards - Additional Types */
+.summary-card.fish-count .summary-card-value { color: #74b9ff; }
+.summary-card.revenue {
+  background: linear-gradient(135deg, rgba(167,139,250,.12), rgba(167,139,250,.05));
+  border-color: rgba(167,139,250,.25);
+}
+.summary-card.revenue .summary-card-value { color: #a78bfa; }
+.summary-card.operations .summary-card-value { color: #ffeaa7; }
+.summary-card.profit {
+  background: linear-gradient(135deg, rgba(0,214,160,.15), rgba(0,184,148,.08)) !important;
+  border-color: rgba(0,214,160,.35) !important;
+}
+.summary-card.profit .summary-card-value { color: #00b894 !important; }
+.summary-card.loss {
+  background: linear-gradient(135deg, rgba(255,107,107,.15), rgba(231,76,60,.08)) !important;
+  border-color: rgba(255,107,107,.35) !important;
+}
+.summary-card.loss .summary-card-value { color: #ff6b6b !important; }
+
+/* Stats Row - صف الإحصائيات الإضافية */
+.summary-stats-row {
+  grid-column: span 3;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.stat-item {
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stat-value.cost-color { color: var(--cost-color); }
+.stat-value.feed-cost-color { color: var(--feed-cost-color); }
+
+/* Fish Table Header - رأس الجدول المحسّن */
+.fish-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.2fr 1fr;
+  gap: 10px;
+  padding: 12px 15px;
+  background: rgba(108,92,231,.2);
+  border-bottom: 2px solid rgba(108,92,231,.35);
+  font-weight: 800;
+  font-size: 11px;
+  color: #a29bfe;
+}
+
+.th-name, .th-qty, .th-weight, .th-revenue, .th-percent {
+  text-align: center;
+}
+
+.th-name { text-align: right; }
+
+/* Enhanced Fish Type Row - صف محسّن */
+.type-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.type-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.harvest-badge, .pending-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: inline-block;
+  width: fit-content;
+}
+
+.harvest-badge {
+  background: rgba(0,214,160,.15);
+  color: #00b894;
+  border: 1px solid rgba(0,214,160,.25);
+}
+
+.pending-badge {
+  background: rgba(253,203,110,.15);
+  color: #f39c12;
+  border: 1px solid rgba(253,203,110,.25);
+}
+
+/* Fish Type Revenue Column - عمود الإيراد */
+.fish-type-revenue {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.fish-type-revenue.has-revenue {
+  color: #a78bfa;
+}
+
+.fish-type-revenue small {
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Qty/Weight Value Styles - تنسيق القيم */
+.qty-value, .weight-value {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.qty-label, .weight-label {
+  display: block;
+  font-size: 9px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Percent Bar - شريط النسبة المئوية */
+.percent-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.percent-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.percent-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+/* Has Harvest State - حالة تم التصريف */
+.fish-type-row.has-harvest {
+  background: rgba(0,214,160,.03);
+  border-left: 3px solid rgba(0,214,160,.3);
+}
+
+/* Responsive Grid for Summary */
+@media (max-width: 480px) {
+  .production-summary {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .summary-card[style*="span 3"] {
+    grid-column: span 2 !important;
+  }
+  
+  .summary-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .fish-table-header,
+  .fish-type-row {
+    grid-template-columns: 1.5fr 0.8fr 0.8fr 1fr 0.7fr !important;
+    gap: 6px !important;
+    padding: 10px 8px !important;
+    font-size: 11px !important;
+  }
+  
+  .type-name { font-size: 11px !important; }
+  .harvest-badge, .pending-badge { font-size: 8px !important; }
 }
 
 /* ══════════════════════════════════════════ */
@@ -8102,7 +8308,7 @@ function cancelCloseCycle() {
   }
 }
 
-// عرض تفاصيل دورة محددة (للاستقبال المستقبلي)
+// عرض تفاصيل دورة محددة (التقرير الشامل)
 function viewCycleDetails(secKey, cycleId) {
   const sectorData = state.sectors[secKey] || {};
   const cycles = sectorData.cycles || {};
@@ -8113,9 +8319,8 @@ function viewCycleDetails(secKey, cycleId) {
     return;
   }
   
-  // حالياً نفس سجل الدورات - يمكن توسيعه لاحقاً
-  console.log('View cycle details:', secKey, cycleId, cycle);
-  toast(`📋 تفاصيل الدورة #${cycle.number} - قيد التطوير`, 'info');
+  // عرض التقرير الشامل للإنتاج
+  showCycleProductionReport(secKey, cycle);
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -8373,15 +8578,24 @@ const UNIT_CONVERSION = {
   box: { toKg: 5, label: 'بوكشة', symbol: 'بوكشة' } // بوكشة = 5 كيلو (يمكن تعديله)
 };
 
-// حساب إنتاج الدورة من بيانات القطاع
+// حساب إنتاج الدورة من بيانات القطاع (نسخة محسّنة وشاملة)
 function calculateCycleProduction(secKey, cycleData) {
   const sectorData = state.sectors[secKey] || {};
   const fish = sectorData.fish || {};
+  const allLogs = state.logs || {};
   
-  // تجميع الأسماك حسب النوع
+  // تحديد فترة الدورة
+  const cycleStart = cycleData?.startDate ? new Date(cycleData.startDate).getTime() : 0;
+  const cycleEnd = cycleData?.endDate ? new Date(cycleData.endDate).getTime() : Date.now();
+  const cycleId = cycleData?.id || cycleData?.cycleId || '';
+  
+  // ════════════════════════════════════════
+  // 1. تجميع الأسماك الحالية حسب النوع
+  // ════════════════════════════════════════
   const fishTypes = {};
   let totalWeightKg = 0;
   let totalCount = 0;
+  let totalFishCost = 0;
   
   Object.values(fish).forEach(fishItem => {
     if (!fishItem) return;
@@ -8389,6 +8603,7 @@ function calculateCycleProduction(secKey, cycleData) {
     const type = fishItem.type || fishItem.fishType || 'سمك عادي';
     const weight = parseFloat(fishItem.kg) || parseFloat(fishItem.weight) || 0;
     const qty = parseInt(fishItem.qty) || 1;
+    const cost = parseFloat(fishItem.price) || parseFloat(fishItem.cost) || 0;
     
     if (!fishTypes[type]) {
       fishTypes[type] = {
@@ -8396,37 +8611,165 @@ function calculateCycleProduction(secKey, cycleData) {
         icon: getFishIcon(type),
         totalWeight: 0,
         count: 0,
-        items: []
+        totalCost: 0,
+        harvestWeight: 0,
+        harvestCount: 0,
+        harvestRevenue: 0,
+        items: [],
+        harvestLogs: []
       };
     }
     
     fishTypes[type].totalWeight += weight;
     fishTypes[type].count += qty;
+    fishTypes[type].totalCost += cost * qty;
     fishTypes[type].items.push(fishItem);
     
     totalWeightKg += weight;
     totalCount += qty;
+    totalFishCost += cost * qty;
   });
   
-  // تحويل لمصفوفة مع حساب النسب المئوية
+  // ════════════════════════════════════════
+  // 2. حساب التصريف/المبيعات من السجلات
+  // ════════════════════════════════════════
+  let totalHarvestRevenue = 0;
+  let totalHarvestOperations = 0;
+  const harvestLogsByType = {};
+  
+  Object.values(allLogs).forEach(log => {
+    if (!log) return;
+    
+    // فلترة سجلات هذا القطاع من نوع التصريف
+    if (log.sector === secKey && log.type === 'fish_out') {
+      const logTime = log.ts || (log.date ? new Date(log.date).getTime() : 0);
+      
+      // التحقق أن السجل ضمن فترة الدورة
+      if (logTime >= cycleStart && logTime <= cycleEnd) {
+        const fishType = log.fishType || 'سمك عادي';
+        const revenue = parseFloat(log.totalRevenue) || 0;
+        const qty = parseFloat(log.qty) || 0;
+        
+        totalHarvestRevenue += revenue;
+        totalHarvestOperations++;
+        
+        // تجميع حسب النوع
+        if (!harvestLogsByType[fishType]) {
+          harvestLogsByType[fishType] = {
+            revenue: 0,
+            count: 0,
+            qty: 0,
+            logs: []
+          };
+        }
+        harvestLogsByType[fishType].revenue += revenue;
+        harvestLogsByType[fishType].count++;
+        harvestLogsByType[fishType].qty += qty;
+        harvestLogsByType[fishType].logs.push(log);
+        
+        // إضافة لنوع السمك الرئيسي إذا كان موجوداً
+        if (fishTypes[fishType]) {
+          fishTypes[fishType].harvestRevenue += revenue;
+          fishTypes[fishType].harvestCount++;
+          fishTypes[fishType].harvestLogs.push(log);
+        }
+      }
+    }
+  });
+  
+  // ════════════════════════════════════════
+  // 3. حساب تكلفة العلف للقطاع خلال الدورة
+  // ════════════════════════════════════════
+  let totalFeedCost = 0;
+  let feedOperations = 0;
+  
+  Object.values(allLogs).forEach(log => {
+    if (!log) return;
+    
+    if (log.sector === secKey && log.type === 'feed_out') {
+      const logTime = log.ts || (log.date ? new Date(log.date).getTime() : 0);
+      
+      if (logTime >= cycleStart && logTime <= cycleEnd) {
+        const cost = parseFloat(log.totalCost) || parseFloat(log.cost) || 0;
+        totalFeedCost += cost;
+        feedOperations++;
+      }
+    }
+  });
+  
+  // ════════════════════════════════════════
+  // 4. حساب المصروفات الإضافية
+  // ════════════════════════════════════════
+  let extraExpenses = 0;
+  
+  Object.values(allLogs).forEach(log => {
+    if (!log) return;
+    
+    if (log.sector === secKey && log.type === 'expense') {
+      const logTime = log.ts || (log.date ? new Date(logdate).getTime() : 0);
+      
+      if (logTime >= cycleStart && logTime <= cycleEnd) {
+        const amount = parseFloat(log.amount) || parseFloat(log.cost) || 0;
+        extraExpenses += amount;
+      }
+    }
+  });
+  
+  // ════════════════════════════════════════
+  // 5. تحويل لمصفوفة مع حساب النسب المئوية
+  // ════════════════════════════════════════
   const typesArray = Object.values(fishTypes).map(ft => ({
     ...ft,
-    percent: totalWeightKg > 0 ? ((ft.totalWeight / totalWeightKg) * 100).toFixed(1) : 0
+    percent: totalWeightKg > 0 ? ((ft.totalWeight / totalWeightKg) * 100).toFixed(1) : 0,
+    revenuePercent: totalHarvestRevenue > 0 ? ((ft.harvestRevenue / totalHarvestRevenue) * 100).toFixed(1) : 0
   }));
   
   // ترتيب تنازلي حسب الوزن
   typesArray.sort((a, b) => b.totalWeight - a.totalWeight);
   
+  // ════════════════════════════════════════
+  // 6. حساب صافي الربح/الخسارة
+  // ════════════════════════════════════════
+  const totalCosts = totalFishCost + totalFeedCost + extraExpenses + (cycleData?.openingBalance?.totalCost || 0);
+  const netProfit = totalHarvestRevenue - totalCosts;
+  
   return {
     sectorKey,
     sectorName: SECTORS[secKey]?.name || secKey,
+    sectorIcon: SECTORS[secKey]?.icon || '🌊',
     cycleNumber: cycleData?.number || 0,
+    cycleId: cycleId,
     startDate: cycleData?.startDate,
-    endDate: new Date().toISOString(),
+    endDate: cycleData?.endDate || new Date().toISOString(),
+    status: cycleData?.status || 'active',
+    
+    // بيانات الأسماك
     totalWeightKg,
     totalCount,
+    totalFishCost,
     fishTypes: typesArray,
-    openingBalance: cycleData?.openingBalance || {}
+    
+    // بيانات التصريف
+    totalHarvestRevenue,
+    totalHarvestOperations,
+    harvestLogsByType,
+    
+    // بيانات التكاليف
+    totalFeedCost,
+    feedOperations,
+    extraExpenses,
+    totalCosts,
+    
+    // صافي الربح
+    netProfit,
+    profitMargin: totalHarvestRevenue > 0 ? ((netProfit / totalHarvestRevenue) * 100).toFixed(1) : 0,
+    
+    // الرصيد الافتتاحي
+    openingBalance: cycleData?.openingBalance || {},
+    
+    // إحصائيات إضافية
+    avgWeightPerFish: totalCount > 0 ? (totalWeightKg / totalCount).toFixed(2) : 0,
+    feedConversionRatio: totalWeightKg > 0 && totalFeedCost > 0 ? (totalFeedCost / totalWeightKg).toFixed(2) : 0
   };
 }
 
@@ -8449,7 +8792,7 @@ function getFishIcon(type) {
   return icons[type] || '🐟';
 }
 
-// عرض تقرير إنتاج الدورة
+// عرض تقرير إنتاج الدورة (محسّن)
 function showCycleProductionReport(secKey, cycleData) {
   const modal = document.getElementById('production-report-modal');
   if (!modal) return;
@@ -8458,10 +8801,19 @@ function showCycleProductionReport(secKey, cycleData) {
   currentReportData = calculateCycleProduction(secKey, cycleData);
   currentReportUnit = 'kg';
   
-  // تحديث العنوان
+  // تحديث العنوان مع حالة الدورة
   const titleEl = document.getElementById('report-sector-name');
   if (titleEl) {
-    titleEl.textContent = `قطاع ${currentReportData.sectorName} | الدورة #${currentReportData.cycleNumber}`;
+    const statusText = currentReportData.status === 'closed' ? '🔴 مغلقة' : '🟢 نشطة';
+    const statusClass = currentReportData.status === 'closed' ? 'status-closed' : 'status-active';
+    titleEl.innerHTML = `
+      <span style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+        <span>${currentReportData.sectorIcon} ${currentReportData.sectorName}</span>
+        <span>|</span>
+        <span>الدورة #${currentReportData.cycleNumber}</span>
+        <span class="${statusClass}" style="padding:2px 8px;border-radius:10px;font-size:10px;">${statusText}</span>
+      </span>
+    `;
   }
   
   // عرض الملخص والجدول
@@ -8476,14 +8828,18 @@ function showCycleProductionReport(secKey, cycleData) {
   document.body.style.overflow = 'hidden';
 }
 
-// عرض بطاقات ملخص الإنتاج
+// عرض بطاقات ملخص الإنتاج (محسّن مع بيانات مالية)
 function renderProductionSummary() {
   if (!currentReportData) return;
   
   const summaryEl = document.getElementById('production-summary');
   if (!summaryEl) return;
   
-  const { totalWeightKg, totalCount } = currentReportData;
+  const { 
+    totalWeightKg, totalCount, totalHarvestRevenue, totalCosts, netProfit,
+    totalFishCost, totalFeedCost, extraExpenses, totalHarvestOperations,
+    avgWeightPerFish, feedConversionRatio
+  } = currentReportData;
   
   // حساب القيم بالوحدات المختلفة
   const conversion = UNIT_CONVERSION[currentReportUnit];
@@ -8491,33 +8847,82 @@ function renderProductionSummary() {
   const tons = totalWeightKg / 1000;
   const boxes = totalWeightKg / UNIT_CONVERSION.box.toKg;
   
+  // تحديد لون الربح/الخسارة
+  const profitClass = netProfit >= 0 ? 'profit' : 'loss';
+  const profitIcon = netProfit >= 0 ? '📈' : '📉';
+  
   summaryEl.innerHTML = `
+    <!-- صف الإنتاج -->
     <div class="summary-card kg">
       <div class="summary-card-icon">⚖️</div>
       <div class="summary-card-value">${formatNumber(displayWeight, 2)}</div>
-      <div class="summary-card-label">${conversion.symbol}</div>
+      <div class="summary-card-label">إجمالي ${conversion.symbol}</div>
+    </div>
+    <div class="summary-card fish-count">
+      <div class="summary-card-icon">🐟</div>
+      <div class="summary-card-value">${totalCount.toLocaleString('ar-EG')}</div>
+      <div class="summary-card-label">عدد الأسماك</div>
     </div>
     <div class="summary-card ton">
       <div class="summary-card-icon">🏗️</div>
       <div class="summary-card-value">${formatNumber(tons, 3)}</div>
       <div class="summary-card-label">طن</div>
     </div>
+    
+    <!-- صف التصريف -->
+    <div class="summary-card revenue">
+      <div class="summary-card-icon">💰</div>
+      <div class="summary-card-value">${fmtCost(totalHarvestRevenue)}</div>
+      <div class="summary-card-label">إيرادات التصريف</div>
+    </div>
+    <div class="summary-card operations">
+      <div class="summary-card-icon">📋</div>
+      <div class="summary-card-value">${totalHarvestOperations}</div>
+      <div class="summary-card-label">عمليات التصريف</div>
+    </div>
     <div class="summary-card box">
       <div class="summary-card-icon">📦</div>
       <div class="summary-card-value">${formatNumber(boxes, 1)}</div>
       <div class="summary-card-label">بوكشة (${UNIT_CONVERSION.box.toKg} كجم)</div>
     </div>
+    
+    <!-- صف صافي الربح -->
+    <div class="summary-card ${profitClass}" style="grid-column: span 3;">
+      <div class="summary-card-icon">${profitIcon}</div>
+      <div class="summary-card-value" style="font-size: 22px;">${netProfit >= 0 ? '+' : ''}${fmtCost(netProfit)}</div>
+      <div class="summary-card-label">صافي الربح/الخسارة | هامش الربح: ${currentReportData.profitMargin}%</div>
+    </div>
+    
+    <!-- إحصائيات إضافية -->
+    <div class="summary-stats-row">
+      <div class="stat-item">
+        <span class="stat-label">متوسط وزن السمكة:</span>
+        <span class="stat-value">${avgWeightPerFish} كجم</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">معامل تحويل العلف:</span>
+        <span class="stat-value">${feedConversionRatio} ج.م/كجم</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">تكلفة الأسماك:</span>
+        <span class="stat-value cost-color">${fmtCost(totalFishCost)}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">تكلفة العلف:</span>
+        <span class="stat-value feed-cost-color">${fmtCost(totalFeedCost)}</span>
+      </div>
+    </div>
   `;
 }
 
-// عرض جدول أنواع السمك
+// عرض جدول أنواع السمك (محسّن مع بيانات التصريف)
 function renderFishTypesTable() {
   if (!currentReportData) return;
   
   const tableEl = document.getElementById('fish-types-table');
   if (!tableEl) return;
   
-  const { fishTypes, totalWeightKg } = currentReportData;
+  const { fishTypes, totalWeightKg, totalHarvestRevenue } = currentReportData;
   const conversion = UNIT_CONVERSION[currentReportUnit];
   
   if (fishTypes.length === 0) {
@@ -8531,33 +8936,80 @@ function renderFishTypesTable() {
     return;
   }
   
+  // رأس الجدول
+  let html = `
+    <div class="fish-table-header">
+      <div class="th-name">نوع السمك</div>
+      <div class="th-qty">الكمية</div>
+      <div class="th-weight">الوزن (${conversion.symbol})</div>
+      <div class="th-revenue">إيراد التصريف</div>
+      <div class="th-percent">النسبة</div>
+    </div>
+  `;
+  
   // صفوف الأنواع
-  const rowsHtml = fishTypes.map(ft => {
+  fishTypes.forEach(ft => {
     const displayWeight = ft.totalWeight / conversion.toKg;
-    return `
-      <div class="fish-type-row">
+    const hasRevenue = ft.harvestRevenue > 0;
+    
+    html += `
+      <div class="fish-type-row ${hasRevenue ? 'has-harvest' : ''}">
         <div class="fish-type-name">
           <span class="fish-type-icon">${ft.icon}</span>
-          ${ft.type}
+          <div class="type-info">
+            <span class="type-name">${ft.type}</span>
+            ${hasRevenue ? `<span class="harvest-badge">✅ تم التصريف</span>` : '<span class="pending-badge">⏳ قيد التربية</span>'}
+          </div>
         </div>
-        <div class="fish-type-qty">${ft.count.toLocaleString('ar-EG')}</div>
-        <div class="fish-type-weight">${formatNumber(displayWeight, 2)} ${conversion.symbol}</div>
-        <div class="fish-type-percent">${ft.percent}%</div>
+        <div class="fish-type-qty">
+          <span class="qty-value">${ft.count.toLocaleString('ar-EG')}</span>
+          <span class="qty-label">قطعة</span>
+        </div>
+        <div class="fish-type-weight">
+          <span class="weight-value">${formatNumber(displayWeight, 2)}</span>
+          <span class="weight-label">${conversion.symbol}</span>
+        </div>
+        <div class="fish-type-revenue ${hasRevenue ? 'has-revenue' : ''}">
+          ${hasRevenue ? fmtCost(ft.harvestRevenue) : '—'}
+          ${ft.harvestCount > 0 ? `<small>(${ft.harvestCount} عملية)</small>` : ''}
+        </div>
+        <div class="fish-type-percent">
+          <div class="percent-bar">
+            <div class="percent-fill" style="width: ${ft.percent}%"></div>
+          </div>
+          <span class="percent-value">${ft.percent}%</span>
+        </div>
       </div>
     `;
-  }).join('');
+  });
   
   // صف الإجمالي
   const totalDisplayWeight = totalWeightKg / conversion.toKg;
-  tableEl.innerHTML = `
-    ${rowsHtml}
+  html += `
     <div class="fish-type-row fish-type-total">
-      <div class="fish-type-name">📊 الإجمالي الكلي</div>
-      <div class="fish-type-qty">${currentReportData.totalCount.toLocaleString('ar-EG')}</div>
-      <div class="fish-type-weight">${formatNumber(totalDisplayWeight, 2)} ${conversion.symbol}</div>
-      <div class="fish-type-percent">100%</div>
+      <div class="fish-type-name">
+        <span class="fish-type-icon">📊</span>
+        <strong>الإجمالي الكلي</strong>
+      </div>
+      <div class="fish-type-qty">
+        <span class="qty-value">${currentReportData.totalCount.toLocaleString('ar-EG')}</span>
+        <span class="qty-label">قطعة</span>
+      </div>
+      <div class="fish-type-weight">
+        <span class="weight-value">${formatNumber(totalDisplayWeight, 2)}</span>
+        <span class="weight-label">${conversion.symbol}</span>
+      </div>
+      <div class="fish-type-revenue has-revenue">
+        ${totalHarvestRevenue > 0 ? fmtCost(totalHarvestRevenue) : '—'}
+        ${currentReportData.totalHarvestOperations > 0 ? `<small>(${currentReportData.totalHarvestOperations} عملية)</small>` : ''}
+      </div>
+      <div class="fish-type-percent">
+        <span class="percent-value">100%</span>
+      </div>
     </div>
   `;
+  
+  tableEl.innerHTML = html;
 }
 
 // تبديل وحدة القياس
