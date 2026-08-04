@@ -3436,7 +3436,8 @@ function closeWelcome(){
     document.getElementById('hdr-username').textContent='مدير — '+currentUser.name;
   }
   init();
-  autoDailyBackupCheck();
+  // ✅ تم إلغاء التنزيل التلقائي - الوركر + R2 بيتولوا النسخ الاحتياطي يومياً
+  // autoDailyBackupCheck();
 }
 
 function doLogout(){
