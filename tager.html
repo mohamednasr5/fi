@@ -3583,10 +3583,31 @@ window.showClientAccount = async function(clientKey, filterFrom='', filterTo='')
             <div id="remaining-preview" style="font-size:20px;font-weight:900;color:var(--danger)">${formatNum(debt)} ج.م</div>
           </div>
           <div style="text-align:left">
-            <div style="font-size:10px;color:var(--text-secondary)">الدفعة</div>
+            <div style="font-size:10px;color:var(--text-secondary)">الدفعة (يُخصم من الدين)</div>
             <div id="payment-preview" style="font-size:17px;font-weight:900;color:var(--emerald)">0 ج.م</div>
           </div>
         </div>
+        <!-- ★★★ قسم المقدم (يظهر عند الدفع الزائد) ★★★ -->
+        <div id="advance-container" style="display:none;justify-content:space-between;align-items:center;padding:11px;background:linear-gradient(135deg,rgba(0,180,216,0.12),rgba(0,229,255,0.06));border:1px solid rgba(0,229,255,0.3);border-radius:10px;margin-bottom:11px">
+          <div>
+            <div style="font-size:10px;color:var(--cyan-glow);font-weight:700">🎁 يُسجل كمقدم للعميل</div>
+            <div style="font-size:9px;color:var(--text-secondary)">يُخصم تلقائياً من الفواتير القادمة</div>
+          </div>
+          <div style="text-align:left">
+            <div id="advance-preview" style="font-size:17px;font-weight:900;color:var(--cyan-glow)">0 ج.م</div>
+          </div>
+        </div>
+        ${c.advanceBalance > 0 ? `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:linear-gradient(135deg,rgba(0,200,150,0.1),rgba(0,180,216,0.05));border:1px solid rgba(0,200,150,0.25);border-radius:10px;margin-bottom:11px">
+          <div>
+            <div style="font-size:10px;color:var(--emerald);font-weight:700">💰 رصيد المقدم الحالي</div>
+            <div style="font-size:9px;color:var(--text-secondary)">متاح للخصم من الفواتير</div>
+          </div>
+          <div style="text-align:left">
+            <div style="font-size:16px;font-weight:900;color:var(--emerald)">${formatNum(c.advanceBalance)} ج.م</div>
+          </div>
+        </div>
+        ` : ''}
         <button id="confirm-pay-btn" onclick="processPayment('${clientKey}',${debt})"
           style="width:100%;padding:15px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--emerald),#00875a);color:white;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;cursor:pointer;box-shadow:0 5px 18px rgba(0,200,150,0.38)">
           ✅ تأكيد وحفظ الدفعة
@@ -3628,13 +3649,18 @@ window.showClientAccount = async function(clientKey, filterFrom='', filterTo='')
               </div>`;
             } else {
               const pay=item.data;
-              return `<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:rgba(0,200,150,0.07);border:1px solid rgba(0,200,150,0.2);border-radius:12px;margin-bottom:7px">
-                <div style="width:36px;height:36px;border-radius:50%;background:rgba(0,200,150,0.15);border:1px solid rgba(0,200,150,0.35);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">💳</div>
+              const hasAdvance = pay.hasAdvance || (pay.advanceAdded || 0) > 0;
+              const advAmount = pay.advanceAdded || 0;
+              return `<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:rgba(0,200,150,0.07);border:1px solid ${hasAdvance?'rgba(0,180,216,0.3)':'rgba(0,200,150,0.2)'};border-radius:12px;margin-bottom:7px${hasAdvance?';border-left:3px solid var(--cyan-glow)':''}">
+                <div style="width:36px;height:36px;border-radius:50%;background:${hasAdvance?'linear-gradient(135deg,rgba(0,180,216,0.2),rgba(0,229,255,0.1))':'rgba(0,200,150,0.15)'};border:1px solid ${hasAdvance?'rgba(0,180,216,0.4)':'rgba(0,200,150,0.35)'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${hasAdvance?'🎁':'💳'}</div>
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:12px;font-weight:700;color:var(--emerald)">دفعة مالية</div>
+                  <div style="font-size:12px;font-weight:700;color:${hasAdvance?'var(--cyan-glow)':'var(--emerald)'}">${hasAdvance?'دفعة مع مقدم 💰':'دفعة مالية'}</div>
                   ${pay.from?`<div style="font-size:10px;color:var(--text-secondary)">👤 ${pay.from}</div>`:''}
                   ${pay.notes?`<div style="font-size:10px;color:var(--text-secondary)">📝 ${pay.notes}</div>`:''}
                   <div style="font-size:10px;color:var(--text-secondary)">📅 ${getDisplayDate(pay.customDate || pay.date, pay.dateStr)}</div>
+                  ${hasAdvance ? `<div style="margin-top:4px;padding:3px 8px;background:rgba(0,180,216,0.1);border-radius:6px;display:inline-block">
+                    <span style="font-size:9px;color:var(--cyan-glow);font-weight:700">🎁 مقدم: ${formatNum(advAmount)} ج.م | الرصيد: ${formatNum(pay.advanceBalanceAfter||0)} ج.م</span>
+                  </div>` : ''}
                 </div>
                 <div style="text-align:left;flex-shrink:0">
                   <div style="font-size:14px;font-weight:900;color:var(--emerald)">-${formatNum(pay.amount)}</div>
@@ -3642,7 +3668,7 @@ window.showClientAccount = async function(clientKey, filterFrom='', filterTo='')
                   <div style="font-size:10px;color:var(--danger)">متبقي: ${formatNum(pay.remainingAfter)}</div>
                   ${!isFiltered ? `<div style="display:flex;gap:4px;margin-top:4px">
                     <button onclick="editPaymentModal('${item.id}','${clientKey}')" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:var(--warning);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">✏️</button>
-                    <button onclick="confirmDeletePayment('${item.id}','${clientKey}',${pay.amount},${pay.remainingAfter})" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">🗑️</button>
+                    <button onclick="confirmDeletePayment('${item.id}','${clientKey}',${pay.amount},${pay.remainingAfter},${advAmount})" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">🗑️</button>
                   </div>` : ''}
                 </div>
               </div>`;
@@ -3852,41 +3878,127 @@ window.setPayAmount = function(amount, maxDebt) {
   const input = document.getElementById('payment-amount');
   if (input) { input.value = amount; updatePayPreview(maxDebt); }
 };
+
+// ★★★ تحديث معاينة الدفع - مع دعم المقدم ★★★
 window.updatePayPreview = function(maxDebt) {
   const val = parseFloat(document.getElementById('payment-amount')?.value)||0;
-  const capped = Math.min(val, maxDebt);
-  const rem = Math.max(maxDebt-capped, 0);
+  
+  // حساب المبالغ
+  const amountToDeduct = Math.min(val, maxDebt);  // ما يُخصم من الدين
+  const advanceAmount = Math.max(val - maxDebt, 0); // ما يبقى كمقدم
+  const remainingDebt = Math.max(maxDebt - amountToDeduct, 0);
+  
+  // تحديث عناصر العرض
   const remEl = document.getElementById('remaining-preview');
   const payEl = document.getElementById('payment-preview');
-  if (remEl) { remEl.textContent=formatNum(rem)+' ج.م'; remEl.style.color=rem===0?'var(--emerald)':'var(--danger)'; }
-  if (payEl) payEl.textContent=formatNum(capped)+' ج.م';
+  const advEl = document.getElementById('advance-preview');
+  const advContainer = document.getElementById('advance-container');
+  
+  if (remEl) { 
+    remEl.textContent = formatNum(remainingDebt) + ' ج.م'; 
+    remEl.style.color = remainingDebt === 0 ? 'var(--emerald)' : 'var(--danger)'; 
+  }
+  if (payEl) payEl.textContent = formatNum(amountToDeduct) + ' ج.م';
+  
+  // عرض المقدم إذا كان هناك فائض
+  if (advEl) {
+    if (advanceAmount > 0) {
+      advEl.textContent = formatNum(advanceAmount) + ' ج.م';
+      advEl.style.color = 'var(--cyan-glow)';
+      if (advContainer) advContainer.style.display = 'flex';
+    } else {
+      advEl.textContent = '0 ج.م';
+      if (advContainer) advContainer.style.display = 'none';
+    }
+  }
 };
 
+// ★★★ الحصول على رصيد المقدم الحالي للعميل ★★★
+window.getClientAdvance = async function(clientKey) {
+  try {
+    const snap = await get(ref(db, 'clients/' + clientKey));
+    const client = snap.val();
+    return client?.advanceBalance || 0;
+  } catch (e) {
+    return 0;
+  }
+};
+
+// ★★★ معالجة الدفع - مع دعم المقدم ★★★
 window.processPayment = async function(clientKey, currentDebt) {
   const amount=parseFloat(document.getElementById('payment-amount')?.value)||0;
   const fromVal=(document.getElementById('payment-from')?.value||'').trim();
   const dateVal=document.getElementById('payment-date')?.value||getTodayISO();
   const notes=(document.getElementById('payment-notes')?.value||'').trim();
   if (amount<=0) return showToast('❌ يرجى إدخال مبلغ أكبر من صفر');
-  const actualPaid=Math.min(amount,currentDebt);
-  const newDebt=Math.max(currentDebt-actualPaid,0);
+  
+  // ★★★ حساب المبالغ مع دعم المقدم ★★★
+  const amountToDeduct = Math.min(amount, currentDebt);  // ما يُخصم من الدين
+  const advanceAmount = Math.max(amount - currentDebt, 0); // ما يُضاف للمقدم
+  const newDebt = Math.max(currentDebt - amountToDeduct, 0);
+  
   const c=window.appState.clients[clientKey];
   const btn=document.getElementById('confirm-pay-btn');
   if (btn){btn.innerHTML='<span class="spinner"></span> جاري الحفظ...';btn.disabled=true;}
+  
   try {
     const clientRef=ref(db,'clients/'+clientKey);
     const snap=await get(clientRef);
     const existing=snap.val()||{};
-    await update(clientRef,{totalDebt:newDebt,totalPaid:(existing.totalPaid||0)+actualPaid});
-    const customDateStr=new Date(dateVal+'T12:00:00').toLocaleDateString('en-GB'); 
-    await push(ref(db,'payments'),{
-      clientKey,clientName:c?.name||existing.name,clientPhone:c?.phone||existing.phone,
-      amount:actualPaid,remainingAfter:newDebt,
-      from:fromVal||c?.name||existing.name,notes,customDate:dateVal,dateStr:customDateStr,
-      date:new Date().toISOString(),savedAt:Date.now()
+    const currentAdvance = existing.advanceBalance || 0;
+    const newAdvance = currentAdvance + advanceAmount;
+    
+    // ★★★ تحديث بيانات العميل (الدين + المدفوع + المقدم) ★★★
+    await update(clientRef,{
+      totalDebt: newDebt, 
+      totalPaid: (existing.totalPaid||0) + amountToDeduct,
+      advanceBalance: newAdvance  // ★★★ إضافة/تحديث رصيد المقدم ★★★
     });
+    
+    const customDateStr=new Date(dateVal+'T12:00:00').toLocaleDateString('en-GB'); 
+    
+    // ★★★ تسجيل الدفعة مع تفاصيل المقدم ★★★
+    await push(ref(db,'payments'),{
+      clientKey,
+      clientName: c?.name || existing.name, 
+      clientPhone: c?.phone || existing.phone,
+      amount: amountToDeduct,           // المبلغ المخصوم من الدين
+      fullAmount: amount,               // المبلغ الكامل المدفوع
+      advanceAdded: advanceAmount,       // ما أُضيف للمقدم
+      remainingAfter: newDebt,
+      advanceBalanceAfter: newAdvance,   // رصيد المقدم بعد العملية
+      from: fromVal || c?.name || existing.name, 
+      notes: notes + (advanceAmount > 0 ? ` | 🎁 مقدم: ${formatNum(advanceAmount)} ج.م` : ''),
+      customDate: dateVal, 
+      dateStr: customDateStr,
+      hasAdvance: advanceAmount > 0,     // ★★★ علامة لتمييز الدفعات ذات المقدم ★★★
+      date: new Date().toISOString(),
+      savedAt: Date.now()
+    });
+    
     closeModal();
-    showToast(`✅ تم تسجيل ${formatNum(actualPaid)} ج.م — المتبقي: ${formatNum(newDebt)} ج.م`);
+    
+    // ★★★ رسالة نجاح مفصلة ★★★
+    let msg = `✅ تم تسجيل الدفعة بنجاح!\n`;
+    msg += `━━━━━━━━━━━━━━━━━━\n`;
+    msg += `💵 المبلغ المدفوع: ${formatNum(amount)} ج.م\n`;
+    msg += `✂️ المخصوم من الدين: ${formatNum(amountToDeduct)} ج.م\n`;
+    if (advanceAmount > 0) {
+      msg += `🎁 المُضاف للمقدم: ${formatNum(advanceAmount)} ج.م\n`;
+      msg += `💰 رصيد المقدم الكلي: ${formatNum(newAdvance)} ج.م\n`;
+    }
+    msg += `━━━━━━━━━━━━━━━━━━\n`;
+    msg += `⚠️ المتبقي على العميل: ${formatNum(newDebt)} ج.م`;
+    
+    showToast(msg);
+    
+    // تحديث البيانات في الذاكرة
+    if (window.appState.clients[clientKey]) {
+      window.appState.clients[clientKey].totalDebt = newDebt;
+      window.appState.clients[clientKey].totalPaid = (existing.totalPaid||0) + amountToDeduct;
+      window.appState.clients[clientKey].advanceBalance = newAdvance;
+    }
+    
   } catch(err) {
     showToast('❌ خطأ: '+err.message);
     if(btn){btn.innerHTML='✅ تأكيد وحفظ الدفعة';btn.disabled=false;}
@@ -6985,30 +7097,37 @@ window.updateEditAddition = function(id) {
 };
 
 // ============================================================
-// DELETE PAYMENT
+// DELETE PAYMENT - مع دعم المقدم
 // ============================================================
-window.confirmDeletePayment = function(paymentId, clientKey, amount, remainingAfter) {
+window.confirmDeletePayment = function(paymentId, clientKey, amount, remainingAfter, advanceAdded) {
+  const advText = advanceAdded > 0 ? `<br><span style="color:var(--cyan-glow);font-size:11px">⚠️ سيتم أيضاً خصم ${formatNum(advanceAdded)} ج.م من رصيد المقدم</span>` : '';
   showConfirmModal({
     icon: '💳', title: 'حذف الدفعة',
-    msg: `هل تريد حذف دفعة <strong>${formatNum(amount)} ج.م</strong>؟<br><span style="color:var(--warning);font-size:11px">سيتم إضافة المبلغ مرة أخرى لرصيد العميل</span>`,
+    msg: `هل تريد حذف دفعة <strong>${formatNum(amount)} ج.م</strong>؟<br><span style="color:var(--warning);font-size:11px">سيتم إضافة المبلغ مرة أخرى لرصيد العميل</span>${advText}`,
     confirmLabel: '🗑️ حذف الدفعة',
     confirmColor: 'linear-gradient(135deg,var(--danger),#c0392b)',
-    onConfirm: () => deletePayment(paymentId, clientKey, amount)
+    onConfirm: () => deletePayment(paymentId, clientKey, amount, advanceAdded)
   });
 };
 
-async function deletePayment(paymentId, clientKey, amount) {
+async function deletePayment(paymentId, clientKey, amount, advanceAdded = 0) {
   try {
     const clientRef = ref(db, 'clients/' + clientKey);
     const snap = await get(clientRef);
     if (snap.exists()) {
       const c = snap.val();
-      await update(clientRef, { totalDebt: (c.totalDebt||0) + amount, totalPaid: Math.max((c.totalPaid||0) - amount, 0) });
+      const currentAdvance = c.advanceBalance || 0;
+      // ★★★ إرجاع الدين + خصم المقدم إذا كان موجود ★★★
+      await update(clientRef, { 
+        totalDebt: (c.totalDebt||0) + amount, 
+        totalPaid: Math.max((c.totalPaid||0) - amount, 0),
+        advanceBalance: Math.max(currentAdvance - (advanceAdded || 0), 0)  // ★★★ خصم المقدم ★★★
+      });
     }
     await remove(ref(db, 'payments/' + paymentId));
     const accModal = document.getElementById('client-account-modal');
     if (accModal) { accModal.remove(); showClientAccount(clientKey); }
-    showToast('✅ تم حذف الدفعة وتحديث الرصيد');
+    showToast('✅ تم حذف الدفعة وتحديث الرصيد' + (advanceAdded > 0 ? ` (تم خصم ${formatNum(advanceAdded)} ج.م من المقدم)` : ''));
   } catch(e) { showToast('❌ خطأ: ' + e.message); }
 }
 
@@ -7017,17 +7136,25 @@ window.editPaymentModal = async function(paymentId, clientKey) {
   try { const snap = await get(ref(db, 'payments/' + paymentId)); pay = snap.val(); } catch(e) { return showToast('❌ خطأ'); }
   if (!pay) return showToast('❌ الدفعة غير موجودة');
   const todayISO = getTodayISO();
+  const oldAmount = pay.amount || 0;
+  const oldAdvance = pay.advanceAdded || 0;
   const modal = document.createElement('div');
   modal.className = 'modal-overlay'; modal.id = 'edit-payment-modal';
   modal.innerHTML = `
     <div class="modal-sheet" style="max-height:80vh">
       <div class="modal-handle"></div>
       <div style="font-size:17px;font-weight:900;color:var(--emerald);text-align:center;margin-bottom:16px">✏️ تعديل الدفعة</div>
-      <div class="form-group"><label class="form-label">💵 المبلغ</label><input type="number" id="ep-amount" class="form-input" value="${pay.amount}" min="0" style="font-size:20px;font-weight:900;text-align:center" inputmode="numeric"></div>
+      ${pay.hasAdvance ? `
+      <div style="background:rgba(0,180,216,0.1);border:1px solid rgba(0,180,216,0.25);border-radius:10px;padding:10px;margin-bottom:14px;text-align:center">
+        <div style="font-size:11px;color:var(--cyan-glow);font-weight:700">🎁 هذه الدفعة تحتوي على مقدم</div>
+        <div style="font-size:10px;color:var(--text-secondary)">المخصوم من الدين: ${formatNum(oldAmount)} ج.م | المُضاف للمقدم: ${formatNum(oldAdvance)} ج.م</div>
+      </div>
+      ` : ''}
+      <div class="form-group"><label class="form-label">💵 المبلغ (المخصص للدين)</label><input type="number" id="ep-amount" class="form-input" value="${oldAmount}" min="0" style="font-size:20px;font-weight:900;text-align:center" inputmode="numeric"></div>
       <div class="form-group"><label class="form-label">👤 استُلم من</label><input type="text" id="ep-from" class="form-input" value="${pay.from||''}"></div>
       <div class="form-group"><label class="form-label">📅 التاريخ</label><input type="date" id="ep-date" class="form-input" value="${pay.customDate||todayISO}" style="color-scheme:dark"></div>
       <div class="form-group"><label class="form-label">📝 ملاحظات</label><input type="text" id="ep-notes" class="form-input" value="${pay.notes||''}" placeholder="كاش — شيك"></div>
-      <button onclick="saveEditPayment('${paymentId}','${clientKey}',${pay.amount})" style="width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--emerald),#00875a);color:white;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;cursor:pointer;margin-bottom:8px">💾 حفظ</button>
+      <button onclick="saveEditPayment('${paymentId}','${clientKey}',${oldAmount},${oldAdvance})" style="width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--emerald),#00875a);color:white;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;cursor:pointer;margin-bottom:8px">💾 حفظ التعديلات</button>
       <button onclick="document.getElementById('edit-payment-modal').remove()" style="width:100%;padding:11px;border-radius:12px;border:1px solid var(--glass-border);background:transparent;color:var(--text-secondary);font-family:'Cairo',sans-serif;font-size:14px;cursor:pointer">إلغاء</button>
     </div>
   `;
@@ -7037,22 +7164,33 @@ window.editPaymentModal = async function(paymentId, clientKey) {
   document.getElementById('modals-container').appendChild(modal);
 };
 
-window.saveEditPayment = async function(paymentId, clientKey, oldAmount) {
+window.saveEditPayment = async function(paymentId, clientKey, oldAmount, oldAdvance) {
   const newAmount = parseFloat(document.getElementById('ep-amount')?.value) || 0;
   const newFrom = (document.getElementById('ep-from')?.value || '').trim();
   const newDate = document.getElementById('ep-date')?.value || '';
   const newNotes = (document.getElementById('ep-notes')?.value || '').trim();
   if (newAmount <= 0) return showToast('❌ المبلغ يجب أن يكون أكبر من صفر');
+  
+  // ★★★ حساب الفروق مع دعم المقدم ★★★
   const diff = newAmount - oldAmount;
   const dateStr = newDate ? new Date(newDate + 'T12:00:00').toLocaleDateString('en-GB') : ''; 
+  
   try {
+    // تحديث بيانات الدفعة
     await update(ref(db, 'payments/' + paymentId), { amount: newAmount, from: newFrom, customDate: newDate, dateStr, notes: newNotes });
+    
+    // ★★★ تحديث بيانات العميل ★★★
     const clientRef = ref(db, 'clients/' + clientKey);
     const snap = await get(clientRef);
     if (snap.exists()) {
       const c = snap.val();
-      await update(clientRef, { totalDebt: Math.max((c.totalDebt||0) - diff, 0), totalPaid: Math.max((c.totalPaid||0) + diff, 0) });
+      await update(clientRef, { 
+        totalDebt: Math.max((c.totalDebt||0) - diff, 0), 
+        totalPaid: Math.max((c.totalPaid||0) + diff, 0)
+        // advanceBalance يبقى كما هو لأننا نعدل فقط المبلغ المخصوم من الدين
+      });
     }
+    
     document.getElementById('edit-payment-modal')?.remove();
     const accModal = document.getElementById('client-account-modal');
     if (accModal) { accModal.remove(); showClientAccount(clientKey); }
