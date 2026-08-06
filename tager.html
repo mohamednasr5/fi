@@ -6392,12 +6392,10 @@ function updateDbBackupInfo() {
   el.textContent = last ? `📅 آخر نسخة احتياطية تلقائية: ${last}` : '⚠️ لم يتم عمل نسخة احتياطية بعد';
 }
 
-// Auto daily backup: runs once per calendar day when the app is opened
+// Auto daily backup: ★ تم إيقاف التنزيل التلقائي - النسخة الاحتياطية يدوياً فقط
 window.autoDailyBackupCheck = function() {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const last = localStorage.getItem(DB_BACKUP_KEY);
-  if (last === todayStr) return;
-  setTimeout(() => { downloadDbBackup(false); }, 2500);
+  // ★ معطّل - لا يتم تنزيل أي شيء تلقائياً
+  return;
 };
 
 window.openDbSettingsModal = async function() {
@@ -8698,7 +8696,14 @@ window.renderProduction = function() {
   const byFish = {};
   let grandKg = 0, grandRevenue = 0;
   const matchedInvoiceIds = new Set();
+  const countedInvoices = new Set(); // ★ لتجنب تكرار حساب إجمالي الفاتورة
   filtered.forEach(([id, inv]) => {
+    // ★ إجمالي المبيعات = الصافي النهائي للفاتورة (inv.total) - نفس الرقم في الرئيسية
+    if (!countedInvoices.has(id)) {
+      grandRevenue += (inv.total || 0);
+      countedInvoices.add(id);
+      matchedInvoiceIds.add(id);
+    }
     (inv.items || []).forEach(item => {
       if (fish && item.fish !== fish) return;
       const kg = item.kg || 0;
@@ -8708,8 +8713,6 @@ window.renderProduction = function() {
       byFish[name].revenue += (item.subtotal || 0);
       byFish[name].items++;
       grandKg += kg;
-      grandRevenue += (item.subtotal || 0);
-      matchedInvoiceIds.add(id);
     });
   });
 
