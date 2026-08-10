@@ -206,6 +206,27 @@ html,body{height:100%;background:var(--deep);color:var(--text);font-family:'Cair
 /* ══════════════════════════════════════
    VIEWER MODE OVERLAY
 ══════════════════════════════════════ */
+#storage-alert{
+  display:none;position:fixed;top:0;left:0;right:0;z-index:9997;
+  background:linear-gradient(135deg,#e94b3c,#c0392b);
+  padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,.35);
+  animation:storageSlide .4s ease;
+}
+#storage-alert.show{display:block;}
+@keyframes storageSlide{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+.storage-alert-row{display:flex;align-items:center;gap:10px;max-width:900px;margin:0 auto;}
+.storage-alert-ico{font-size:20px;flex-shrink:0;}
+.storage-alert-txt{flex:1;font-size:13px;font-weight:700;color:#fff;line-height:1.4;}
+.storage-alert-close{
+  background:rgba(255,255,255,.15);border:none;color:#fff;
+  width:26px;height:26px;border-radius:50%;font-size:16px;
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:background .2s;
+}
+.storage-alert-close:hover{background:rgba(255,255,255,.3);}
+.storage-alert-bar-wrap{max-width:900px;margin:8px auto 0;background:rgba(0,0,0,.25);border-radius:8px;height:8px;overflow:hidden;}
+.storage-alert-bar{height:100%;border-radius:8px;background:linear-gradient(90deg,#e94b3c,#f4d03f);transition:width .6s ease;}
+.storage-alert-pct{max-width:900px;margin:4px auto 0;font-size:11px;color:rgba(255,255,255,.85);text-align:left;font-weight:600;}
 .viewer-badge{
   position:fixed;top:14px;left:14px;z-index:90;
   background:rgba(6,214,160,.15);border:1px solid rgba(6,214,160,.3);
@@ -2645,6 +2666,16 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
   </div>
 </div>
 
+<div id="storage-alert">
+  <div class="storage-alert-row">
+    <span class="storage-alert-ico">⚠️</span>
+    <span class="storage-alert-txt">ذاكرة قاعدة البيانات أوشكت على الامتلاء، من فضلك يرجى شراء خطة تطوير وإلا ستفقد بياناتك</span>
+    <button class="storage-alert-close" onclick="closeStorageAlert()">×</button>
+  </div>
+  <div class="storage-alert-bar-wrap"><div class="storage-alert-bar" id="storage-alert-bar" style="width:93%;"></div></div>
+  <div class="storage-alert-pct" id="storage-alert-pct">93% من الخطة المجانية</div>
+</div>
+
 <div class="viewer-badge" id="viewer-badge">👁️ وضع العرض فقط</div>
 
 <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
@@ -3422,6 +3453,19 @@ function doLogin(pw){
   document.getElementById('welcome-banner').classList.add('show');
 }
 
+function showStorageAlert(){
+  const el = document.getElementById('storage-alert');
+  if(!el) return;
+  el.classList.add('show');
+}
+function closeStorageAlert(){
+  const el = document.getElementById('storage-alert');
+  if(!el) return;
+  el.classList.remove('show');
+}
+window.showStorageAlert=showStorageAlert;
+window.closeStorageAlert=closeStorageAlert;
+
 function closeWelcome(){
   document.getElementById('welcome-banner').classList.remove('show');
   document.getElementById('app').style.display='flex';
@@ -3435,6 +3479,7 @@ function closeWelcome(){
     document.getElementById('viewer-badge').classList.remove('show');
     document.getElementById('hdr-username').textContent='مدير — '+currentUser.name;
   }
+  showStorageAlert();
   init();
   // ✅ تم إلغاء التنزيل التلقائي - الوركر + R2 بيتولوا النسخ الاحتياطي يومياً
   // autoDailyBackupCheck();
