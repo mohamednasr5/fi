@@ -703,6 +703,28 @@
   .login-btn:active { transform: scale(0.97); }
   .login-error { color: var(--danger); font-size: 12px; font-weight: 600; margin-top: 10px; min-height: 18px; transition: all 0.2s; }
 
+  #storage-alert{
+    display:none;position:fixed;top:0;left:0;right:0;z-index:9997;
+    background:linear-gradient(135deg,#e94b3c,#c0392b);
+    padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,.35);
+    animation:storageSlide .4s ease;
+  }
+  #storage-alert.show{display:block;}
+  @keyframes storageSlide{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+  .storage-alert-row{display:flex;align-items:center;gap:10px;max-width:900px;margin:0 auto;}
+  .storage-alert-ico{font-size:20px;flex-shrink:0;}
+  .storage-alert-txt{flex:1;font-size:13px;font-weight:700;color:#fff;line-height:1.4;}
+  .storage-alert-close{
+    background:rgba(255,255,255,.15);border:none;color:#fff;
+    width:26px;height:26px;border-radius:50%;font-size:16px;
+    cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    transition:background .2s;
+  }
+  .storage-alert-close:hover{background:rgba(255,255,255,.3);}
+  .storage-alert-bar-wrap{max-width:900px;margin:8px auto 0;background:rgba(0,0,0,.25);border-radius:8px;height:8px;overflow:hidden;}
+  .storage-alert-bar{height:100%;border-radius:8px;background:linear-gradient(90deg,#e94b3c,#f4d03f);transition:width .6s ease;}
+  .storage-alert-pct{max-width:900px;margin:4px auto 0;font-size:11px;color:rgba(255,255,255,.85);text-align:left;font-weight:600;}
+
   .welcome-toast {
     position: fixed; top: 0; left: 0; right: 0; z-index: 9998;
     background: linear-gradient(135deg, rgba(0,180,216,0.95), rgba(21,101,192,0.95));
@@ -977,6 +999,26 @@
 </style>
 </head>
 <body>
+
+<div id="storage-alert">
+  <div class="storage-alert-row">
+    <span class="storage-alert-ico">⚠️</span>
+    <span class="storage-alert-txt">ذاكرة قاعدة البيانات أوشكت على الامتلاء، من فضلك يرجى شراء خطة تطوير وإلا ستفقد بياناتك</span>
+    <button class="storage-alert-close" onclick="closeStorageAlert()">×</button>
+  </div>
+  <div class="storage-alert-bar-wrap"><div class="storage-alert-bar" id="storage-alert-bar" style="width:88%;"></div></div>
+  <div class="storage-alert-pct" id="storage-alert-pct">88% من الخطة المجانية</div>
+</div>
+<script>
+  window.closeStorageAlert = function(){
+    var el = document.getElementById('storage-alert');
+    if(el) el.classList.remove('show');
+  };
+  window.showStorageAlert = function(){
+    var el = document.getElementById('storage-alert');
+    if(el) el.classList.add('show');
+  };
+</script>
 
 <!-- ============ PWA SPLASH SCREEN ============ -->
 <div id="pwa-splash">
@@ -8433,6 +8475,7 @@ window.doLogin = function() {
   
   // تفعيل النظام
   document.getElementById('login-screen').classList.add('hidden');
+  showStorageAlert();
   
   // تحديث شارة الدور
   updateRoleBadge();
