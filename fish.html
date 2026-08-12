@@ -3652,7 +3652,7 @@ function addStockDelta(stock, unit, val){
 function fmtStock(s){
   if(!s) return '<b>0</b>';
   const parts = [];
-  if(s.ton  ) parts.push(`<b class="c30">${+s.ton  }</b> طن`);
+  if(s.ton  ) parts.push(`<b class="c30">${(+s.ton).toFixed(3)}</b> طن`);
   if(s.b50  ) parts.push(`<b class="c25">${+s.b50  }</b> شيكارة 50`);
   if(s.b25  ) parts.push(`<b class="c18">${+s.b25  }</b> شيكارة 25`);
   if(!parts.length) return '<b>0</b>';
@@ -4877,11 +4877,11 @@ function renderStore(){
         </tr></thead>
         <tbody>
           <tr>
-            <td style="color:var(--muted);font-size:10px;">🌊 عايم</td><td class="c18">${fS.b25||0}</td><td class="c25">${fS.b50||0}</td><td class="c30">${+(fS.ton||0)}</td><td style="color:var(--muted);font-size:10px;">${fKg.toLocaleString('ar-EG')}</td>
+            <td style="color:var(--muted);font-size:10px;">🌊 عايم</td><td class="c18">${fS.b25||0}</td><td class="c25">${fS.b50||0}</td><td class="c30">${(+ (fS.ton||0)).toFixed(3)}</td><td style="color:var(--muted);font-size:10px;">${fKg.toLocaleString('ar-EG')}</td>
             <td><button class="b-edit" style="font-size:11px;padding:4px 8px;font-weight:bold;background:rgba(255,209,102,.15);color:var(--gold);border-color:rgba(255,209,102,.3);" onclick="openEditStore('${sk(t,'float')}')">✏️ تعديل الرصيد</button></td>
           </tr>
           <tr>
-            <td style="color:var(--muted);font-size:10px;">⬇️ غاطس</td><td class="c18">${sS.b25||0}</td><td class="c25">${sS.b50||0}</td><td class="c30">${+(sS.ton||0)}</td><td style="color:var(--muted);font-size:10px;">${sKg.toLocaleString('ar-EG')}</td>
+            <td style="color:var(--muted);font-size:10px;">⬇️ غاطس</td><td class="c18">${sS.b25||0}</td><td class="c25">${sS.b50||0}</td><td class="c30">${(+ (sS.ton||0)).toFixed(3)}</td><td style="color:var(--muted);font-size:10px;">${sKg.toLocaleString('ar-EG')}</td>
             <td><button class="b-edit" style="font-size:11px;padding:4px 8px;font-weight:bold;background:rgba(255,209,102,.15);color:var(--gold);border-color:rgba(255,209,102,.3);" onclick="openEditStore('${sk(t,'sink')}')">✏️ تعديل الرصيد</button></td>
           </tr>
           <tr class="stk-total-row">
