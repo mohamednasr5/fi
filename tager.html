@@ -3738,9 +3738,9 @@ window.showClientAccount = async function(clientKey, filterFrom='', filterTo='')
                   <div style="font-size:14px;font-weight:900;color:${isAuto?'var(--danger)':'var(--emerald)'}">-${formatNum(pay.amount)}</div>
                   <div style="font-size:9px;color:var(--text-secondary)">ج.م دفع</div>
                   <div style="font-size:10px;color:var(--danger)">متبقي: ${formatNum(pay.remainingAfter)}</div>
-                  ${(!isFiltered && !isAuto) ? `<div style="display:flex;gap:4px;margin-top:4px">
-                    <button onclick="editPaymentModal('${item.id}','${clientKey}')" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:var(--warning);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">✏️</button>
-                    <button onclick="confirmDeletePayment('${item.id}','${clientKey}',${pay.amount},${pay.remainingAfter})" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">🗑️</button>
+                  ${!isFiltered ? `<div style="display:flex;gap:4px;margin-top:4px">
+                    <button onclick="${isAuto?`editAutoAdvanceModal('${item.id}','${clientKey}',${pay.amount})`:`editPaymentModal('${item.id}','${clientKey}')`}" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);color:var(--warning);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">✏️</button>
+                    <button onclick="${isAuto?`confirmDeleteAutoAdvance('${item.id}','${clientKey}',${pay.amount},${pay.advanceAfter||0})`:`confirmDeletePayment('${item.id}','${clientKey}',${pay.amount},${pay.remainingAfter})`}" style="padding:4px 8px;border-radius:6px;border:1px solid rgba(255,71,87,0.4);background:rgba(255,71,87,0.1);color:var(--danger);font-family:'Cairo',sans-serif;font-size:10px;cursor:pointer">🗑️</button>
                   </div>` : ''}
                 </div>
               </div>`;
@@ -7210,6 +7210,187 @@ window.saveEditPayment = async function(paymentId, clientKey, oldAmount) {
     showToast('✅ تم تعديل الدفعة بنجاح');
   } catch(e) { showToast('❌ خطأ: ' + e.message); }
 };
+
+// ============================================================
+// EDIT & DELETE AUTO ADVANCE (خصم الدفعة المقدمة)
+// ============================================================
+
+// ✏️ نافذة تعديل خصم الدفعة المقدمة
+window.editAutoAdvanceModal = async function(paymentId, clientKey, currentAmount) {
+  let pay;
+  try { const snap = await get(ref(db, 'payments/' + paymentId)); pay = snap.val(); } catch(e) { return showToast('❌ خطأ'); }
+  if (!pay) return showToast('❌ عملية الخصم غير موجودة');
+  
+  const todayISO = getTodayISO();
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay'; modal.id = 'edit-auto-advance-modal';
+  modal.innerHTML = `
+    <div class="modal-sheet" style="max-height:80vh">
+      <div class="modal-handle"></div>
+      <div style="font-size:17px;font-weight:900;color:var(--danger);text-align:center;margin-bottom:16px">✏️ تعديل خصم الدفعة المقدمة</div>
+      <div style="background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.25);border-radius:12px;padding:12px;margin-bottom:14px">
+        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px">💳 معلومات الخصم الحالي:</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:var(--danger);font-weight:700">المبلغ: ${formatNum(pay.amount)} ج.م</span>
+          <span style="color:var(--text-secondary)">رصيد بعد: ${formatNum(pay.advanceAfter||0)} ج.م</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" style="color:var(--danger)">💰 المبلغ الجديد للخصم</label>
+        <input type="number" id="eaa-amount" class="form-input" value="${pay.amount}" min="0" style="font-size:22px;font-weight:900;text-align:center;color:var(--danger)" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">📝 سبب التعديل / ملاحظات</label>
+        <input type="text" id="eaa-notes" class="form-input" value="${pay.notes||''}" placeholder="تم التعديل بسبب...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">📅 التاريخ</label>
+        <input type="date" id="eaa-date" class="form-input" value="${pay.customDate||todayISO}" style="color-scheme:dark">
+      </div>
+      <button onclick="saveEditAutoAdvance('${paymentId}','${clientKey}',${pay.amount},${pay.advanceAfter||0})" style="width:100%;padding:14px;border-radius:13px;border:none;background:linear-gradient(135deg,var(--danger),#c0392b);color:white;font-family:'Cairo',sans-serif;font-size:15px;font-weight:900;cursor:pointer;margin-bottom:8px">💾 حفظ التعديلات</button>
+      <button onclick="document.getElementById('edit-auto-advance-modal').remove()" style="width:100%;padding:11px;border-radius:12px;border:1px solid var(--glass-border);background:transparent;color:var(--text-secondary);font-family:'Cairo',sans-serif;font-size:14px;cursor:pointer">إلغاء</button>
+    </div>
+  `;
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  const old = document.getElementById('edit-auto-advance-modal');
+  if (old) old.remove();
+  document.getElementById('modals-container').appendChild(modal);
+};
+
+// 💾 حفظ تعديل خصم الدفعة المقدمة
+window.saveEditAutoAdvance = async function(paymentId, clientKey, oldAmount, oldAdvanceAfter) {
+  const newAmount = parseFloat(document.getElementById('eaa-amount')?.value) || 0;
+  const newNotes = (document.getElementById('eaa-notes')?.value || '').trim();
+  const newDate = document.getElementById('eaa-date')?.value || '';
+  
+  if (newAmount < 0) return showToast('❌ المبلغ لا يمكن أن يكون سالباً');
+  
+  const dateStr = newDate ? new Date(newDate + 'T12:00:00').toLocaleDateString('en-GB') : '';
+  
+  try {
+    const payRef = ref(db, 'payments/' + paymentId);
+    const paySnap = await get(payRef);
+    const oldPay = paySnap.val() || {};
+    
+    const clientRef = ref(db, 'clients/' + clientKey);
+    const snap = await get(clientRef);
+    const c = snap.val() || {};
+    
+    // حساب الفرق بين القديم والجديد
+    const amountDiff = newAmount - oldAmount;
+    
+    // إلغاء أثر الخصم القديم
+    // - إضافة المبلغ القديم مرة أخرى كدين
+    // - استعادة رصيد الدفعة المقدمة
+    const debtAfterRevert = (c.totalDebt||0) + oldAmount;
+    const paidAfterRevert = Math.max((c.totalPaid||0) - oldAmount, 0);
+    const advanceAfterRevert = (c.advanceBalance||0) + oldAmount;
+    
+    // تطبيق الخصم الجديد
+    let newDebt, newTotalPaid, newAdvanceBalance;
+    
+    if (newAmount > 0) {
+      // يوجد خصم جديد
+      const actualDeduct = Math.min(newAmount, debtAfterRevert);
+      newDebt = Math.max(debtAfterRevert - actualDeduct, 0);
+      newTotalPaid = paidAfterRevert + actualDeduct;
+      newAdvanceBalance = Math.max(advanceAfterRevert - actualDeduct, 0);
+    } else {
+      // تم إلغاء الخصم بالكامل
+      newDebt = debtAfterRevert;
+      newTotalPaid = paidAfterRevert;
+      newAdvanceBalance = advanceAfterRevert;
+    }
+    
+    await update(payRef, {
+      amount: newAmount,
+      debtPaid: newAmount,
+      remainingAfter: newDebt,
+      advanceAfter: newAdvanceBalance,
+      customDate: newDate,
+      dateStr: dateStr,
+      notes: newNotes || 'خصم من الدفعة المقدمة',
+      editedAt: new Date().toISOString(),
+      wasEdited: true
+    });
+    
+    await update(clientRef, {
+      totalDebt: newDebt,
+      totalPaid: newTotalPaid,
+      advanceBalance: newAdvanceBalance
+    });
+    
+    document.getElementById('edit-auto-advance-modal')?.remove();
+    const accModal = document.getElementById('client-account-modal');
+    if (accModal) { accModal.remove(); showClientAccount(clientKey); }
+    
+    if (newAmount === 0) {
+      showToast('✅ تم إلغاء الخصم بالكامل واستعادة الرصيد');
+    } else if (amountDiff > 0) {
+      showToast(`✅ تم زيادة الخصم إلى ${formatNum(newAmount)} ج.م`);
+    } else if (amountDiff < 0) {
+      showToast(`✅ تم تقليل الخصم إلى ${formatNum(newAmount)} ج.م`);
+    } else {
+      showToast('✅ تم تحديث بيانات الخصم');
+    }
+  } catch(e) { 
+    console.error('Save edit auto advance error:', e);
+    showToast('❌ خطأ: ' + e.message); 
+  }
+};
+
+// 🗑️ تأكيد حذف خصم الدفعة المقدمة
+window.confirmDeleteAutoAdvance = function(paymentId, clientKey, amount, advanceAfter) {
+  showConfirmModal({
+    icon: '💳', 
+    title: 'حذف خصم الدفعة المقدمة',
+    msg: `هل تريد حذف خصم <strong>${formatNum(amount)} ج.م</strong> من الدفعة المقدمة؟<br><br>
+          <span style="color:var(--emerald);font-size:11px">✅ سيتم:</span><br>
+          • إضافة ${formatNum(amount)} ج.م لرصيد العميل كمدين<br>
+          • استعادة ${formatNum(amount)} ج.م للدفعة المقدمة`,
+    confirmLabel: '🗑️ تأكيد الحذف',
+    confirmColor: 'linear-gradient(135deg,var(--danger),#c0392b)',
+    onConfirm: () => deleteAutoAdvance(paymentId, clientKey, amount)
+  });
+};
+
+// 🗑️ تنفيذ حذف خصم الدفعة المقدمة
+async function deleteAutoAdvance(paymentId, clientKey, amount) {
+  try {
+    const payRef = ref(db, 'payments/' + paymentId);
+    const paySnap = await get(payRef);
+    const payData = paySnap.val() || {};
+    
+    const clientRef = ref(db, 'clients/' + clientKey);
+    const snap = await get(clientRef);
+    
+    if (snap.exists()) {
+      const c = snap.val();
+      
+      // عند حذف الخصم:
+      // 1. إضافة المبلغ مرة أخرى كدين على العميل
+      // 2. تقليل المدفوعات
+      // 3. استعادة رصيد الدفعة المقدمة
+      await update(clientRef, {
+        totalDebt: (c.totalDebt||0) + amount,
+        totalPaid: Math.max((c.totalPaid||0) - amount, 0),
+        advanceBalance: (c.advanceBalance||0) + amount
+      });
+    }
+    
+    // حذف سجل الخصم
+    await remove(payRef);
+    
+    // تحديث الواجهة
+    const accModal = document.getElementById('client-account-modal');
+    if (accModal) { accModal.remove(); showClientAccount(clientKey); }
+    
+    showToast(`✅ تم حذف الخصم (${formatNum(amount)} ج.م) واستعادة الرصيد`);
+  } catch(e) { 
+    console.error('Delete auto advance error:', e);
+    showToast('❌ خطأ: ' + e.message); 
+  }
+}
 
 // ============================================================
 // EDIT CLIENT
