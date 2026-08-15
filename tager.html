@@ -3534,10 +3534,16 @@ window.showClientAccount = async function(clientKey, filterFrom='', filterTo='')
   }
 
   // حساب الإجماليات للحركات المفلترة
-  let periodPurchases = 0, periodPaid = 0;
+  let periodPurchases = 0, periodPaid = 0, totalAutoAdvanceDeduced = 0;
   filteredTimeline.forEach(item => {
     if (item.type === 'invoice') periodPurchases += (item.data.total || 0);
-    else                          periodPaid     += (item.data.amount || 0);
+    else {
+      periodPaid += (item.data.amount || 0);
+      // 💳 حساب إجمالي خصم الدفعة المقدمة (isAutoAdvance)
+      if (item.data.isAutoAdvance) {
+        totalAutoAdvanceDeduced += (item.data.amount || 0);
+      }
+    }
   });
   const periodDebt = Math.max(0, periodPurchases - periodPaid);
 
@@ -3618,10 +3624,32 @@ window.showClientAccount = async function(clientKey, filterFrom='', filterTo='')
           <div style="font-size:9px;color:${isFiltered?'rgba(255,193,7,0.6)':'rgba(0,180,216,0.6)'}">ج.م</div>
         </div>
         ${(!isFiltered && advanceBalance>0) ? `
-        <div style="background:rgba(255,71,87,0.14);border:1px solid rgba(255,71,87,0.45);border-radius:13px;padding:10px 6px;text-align:center">
-          <div style="font-size:9px;color:var(--danger);margin-bottom:3px;font-weight:700">💳 له مقدم</div>
-          <div style="font-size:15px;font-weight:900;color:var(--danger)">${formatNum(advanceBalance)}</div>
-          <div style="font-size:9px;color:rgba(255,71,87,0.7)">ج.م</div>
+        <div style="background:linear-gradient(135deg,rgba(255,71,87,0.14),rgba(255,71,87,0.07));border:1px solid rgba(255,71,87,0.45);border-radius:13px;padding:12px 10px;text-align:center;position:relative;overflow:hidden">
+          <!-- زخرفة خفيفة -->
+          <div style="position:absolute;top:-15px;left:-15px;width:50px;height:50px;border-radius:50%;background:rgba(255,71,87,0.1);pointer-events:none"></div>
+          <div style="position:absolute;bottom:-10px;right:-10px;width:35px;height:35px;border-radius:50%;background:rgba(255,71,87,0.08);pointer-events:none"></div>
+          
+          <div style="font-size:10px;color:var(--danger);margin-bottom:4px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px">
+            💳 له مقدم
+            ${totalAutoAdvanceDeduced > 0 ? `<span style="font-size:8px;background:rgba(255,71,87,0.2);padding:1px 6px;border-radius:8px;font-weight:600">خصم: ${formatNum(totalAutoAdvanceDeduced)}</span>` : ''}
+          </div>
+          <div style="font-size:18px;font-weight:900;color:var(--danger);margin-bottom:2px">${formatNum(advanceBalance)}</div>
+          <div style="font-size:9px;color:rgba(255,71,87,0.7)">ج.م رصيد متبقي</div>
+          
+          <!-- 💳 تفاصيل خصم الدفعة المقدمة -->
+          ${totalAutoAdvanceDeduced > 0 ? `
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,71,87,0.2)">
+            <div style="font-size:9px;color:rgba(255,71,87,0.85);font-weight:600;margin-bottom:3px">📊 ملخص الخصم</div>
+            <div style="display:flex;justify-content:space-between;font-size:9px">
+              <span style="color:rgba(255,71,87,0.7)">إجمالي المخصوم:</span>
+              <span style="color:var(--danger);font-weight:700">-${formatNum(totalAutoAdvanceDeduced)} ج.م</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:9px;margin-top:2px">
+              <span style="color:rgba(255,71,87,0.7)">الرصيد الحالي:</span>
+              <span style="color:var(--danger);font-weight:700">${formatNum(advanceBalance)} ج.م</span>
+            </div>
+          </div>
+          ` : ''}
         </div>` : ''}
       </div>
       
