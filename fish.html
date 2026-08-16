@@ -2847,6 +2847,159 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       <div id="zariaPageEl"><div class="loading"><div class="spin"></div></div></div>
     </div>
 
+    <!-- ══════════════════════════════════════════ -->
+    <!-- 🐣 صفحة زريعة 2027 (قسم مستقل للسنة القادمة) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="pg" id="pg-zaria2027">
+      <div class="pg-ttl" style="background:linear-gradient(135deg,#ff6b6b33,#ff6b6b11);border-right:4px solid #ff6b6b;">🐣 زريعة 2027 — السنة القادمة</div>
+      <div class="ibox" style="margin-bottom:14px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);">
+        <b>📌 قسم مستقل:</b> هذا القسم خاص بزريعة 2027 التي ستُنقل للقطاعات لاحقاً. العلف يُسحب من <b>المخزن الأساسي</b>.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="btn btn-gold" style="width:auto;padding:10px 14px;background:linear-gradient(135deg,#ff6b6b,#ee5a5a);" onclick="exportZaria2027PDF()">📄 تصدير تقرير زريعة 2027 (PDF)</button>
+        <button class="btn" style="width:auto;padding:10px 14px;background:linear-gradient(135deg,#06d6a0,#05b589);color:#fff;" onclick="transferZaria2027ToSectors()">🔄 نقل للقطاعات</button>
+      </div>
+
+      <!-- ملخص إحصائي لزريعة 2027 -->
+      <div id="zaria2027-summary" style="background:linear-gradient(135deg,rgba(255,107,107,.12),rgba(255,107,107,.08));border:1px solid rgba(255,107,107,.3);border-radius:var(--r);padding:15px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:#ff6b6b;margin-bottom:10px;">📊 ملخص زريعة 2027</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;" id="zaria2027-stats">
+          <div class="sum-chip" style="background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3);">
+            <div class="v" style="color:#ff6b6b;" id="z2027-total-qty">0</div><div class="l">إجمالي الزريعة (قطعة)</div>
+          </div>
+          <div class="sum-chip cost-chip">
+            <div class="v" id="z2027-total-cost">0 ج.م</div><div class="l">تكلفة شراء الزريعة</div>
+          </div>
+          <div class="sum-chip" style="background:var(--feed-cost-bg);border-color:var(--feed-cost-border);">
+            <div class="v" style="color:var(--feed-cost-color);" id="z2027-feed-kg">0 كجم</div><div class="l">علف مستهلك من المخزن</div>
+          </div>
+          <div class="sum-chip" style="background:var(--feed-cost-bg);border-color:var(--feed-cost-border);">
+            <div class="v" style="color:var(--feed-cost-color);" id="z2027-feed-cost">0 ج.م</div><div class="l">تكلفة العلف</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- قسم إضافة زريعة جديدة -->
+      <div class="card" style="margin-bottom:14px;border-color:rgba(255,107,107,.4);">
+        <div class="card-ttl" style="color:#ff6b6b;">➕ إضافة دفعة زريعة 2027</div>
+        <div class="fg">
+          <label class="fl">🐠 نوع السمك</label>
+          <select class="fc" id="z2027-fishtype">
+            <option value="بوري">🐟 بوري</option>
+            <option value="طوبار">🐠 طوبار</option>
+            <option value="شبار">🐡 شبار</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">🔢 الكمية (بالعدد)</label>
+          <input class="fc" type="number" id="z2027-qty" min="1" step="1" placeholder="أدخل عدد القطع">
+        </div>
+        <div class="fg">
+          <label class="fl" style="color:var(--cost-color);">💰 سعر القطعة الواحدة</label>
+          <div class="price-input-wrap">
+            <input class="fc" type="number" id="z2027-price" min="0" step="0.01" placeholder="0.00" oninput="calcZaria2027Total()">
+            <span class="price-currency">ج.م</span>
+          </div>
+          <div id="z2027-total-preview" style="font-size:13px;font-weight:700;color:#ff6b6b;margin-top:6px;display:none;"></div>
+        </div>
+        <div class="fg">
+          <label class="fl">📅 التاريخ</label>
+          <input class="fc" type="date" id="z2027-date">
+        </div>
+        <div class="fg">
+          <label class="fl">📝 ملاحظات</label>
+          <input class="fc" type="text" id="z2027-notes" placeholder="مثال: دفعة أولى...">
+        </div>
+        <button class="btn btn-green" onclick="addZaria2027()" style="background:linear-gradient(135deg,#ff6b6b,#ee5a5a);">💾 إضافة دفعة الزريعة</button>
+      </div>
+
+      <!-- قسم سحب العلف من المخزن الأساسي -->
+      <div class="card" style="margin-bottom:14px;border-color:rgba(244,162,97,.4);">
+        <div class="card-ttl" style="color:var(--feed-cost-color);">🍽️ سحب علف من المخزن الأساسي</div>
+        <div class="ibox warn" style="margin-bottom:12px;">⚠️ العلف يُسحب مباشرة من <b>المخزن الرئيسي</b> ويُسجل هنا كمصروف لزريعة 2027</div>
+        
+        <div class="fg">
+          <label class="fl">نوع العلف</label>
+          <select class="fc" id="z2027-ftype" onchange="z2027StockInfo();">
+            <option value="30">علف 30%</option>
+            <option value="18">علف 18%</option>
+            <option value="25">علف 25%</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">نوع الطفو</label>
+          <div class="tg">
+            <button class="tb active" id="z2027-flt-float" onclick="z2027Float('float')">🌊 عايم</button>
+            <button class="tb" id="z2027-flt-sink" onclick="z2027Float('sink')">⬇️ غاطس</button>
+          </div>
+        </div>
+        <div class="ibox" id="z2027-stock-info" style="margin-bottom:12px;">اختر نوع العلف لعرض المتاح في المخزن</div>
+        
+        <div class="fg">
+          <label class="fl">الوحدة</label>
+          <div class="tg">
+            <button class="tb active" id="z2027-u25" onclick="z2027Unit('bag25')">🛍️ شيكارة 25 كجم</button>
+            <button class="tb" id="z2027-u50" onclick="z2027Unit('bag50')">🛍️ شيكارة 50 كجم</button>
+            <button class="tb" id="z2027-uton" onclick="z2027Unit('ton')">⚖️ طن</button>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl" id="z2027-qty-lbl">العدد (شيكارة 25 كجم)</label>
+          <input class="fc" type="number" id="z2027-qty" placeholder="أدخل العدد" min="0" step="1" oninput="z2027Calc();">
+          <div class="ibox" id="z2027-calc" style="margin-top:8px;display:none;"></div>
+        </div>
+        <div class="fg">
+          <label class="fl" style="color:var(--feed-cost-color);">💵 سعر الوحدة</label>
+          <div class="feed-price-input-wrap">
+            <input class="fc" type="number" id="z2027-feedprice" placeholder="0.00" min="0" step="0.01">
+            <span class="feed-price-currency">ج.م</span>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">تاريخ السحب</label>
+          <input class="fc" type="date" id="z2027-feeddate">
+        </div>
+        <div class="fg">
+          <label class="fl">ملاحظات</label>
+          <input class="fc" type="text" id="z2027-feednotes" placeholder="ملاحظات إضافية">
+        </div>
+        <button class="btn" onclick="doZaria2027FeedOut()" style="background:linear-gradient(135deg,#c97d20,var(--feed-cost-color));color:var(--deep);">✅ تأكيد سحب العلف من المخزن</button>
+      </div>
+
+      <!-- قائمة الزريعة المسجلة -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-ttl" style="color:#ff6b6b;">📋 دفعات الزريعة المسجلة</div>
+        <div id="zaria2027-list"><div class="empty"><div class="ei">🐣</div><p>لم يتم تسجيل أي دفعة زريعة بعد</p></div></div>
+      </div>
+
+      <!-- قائمة سحب العلف -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="card-ttl" style="color:var(--feed-cost-color);">🌿 سجل سحب العلف من المخزن</div>
+        <div id="zaria2027-feedlist"><div class="empty"><div class="ei">🍽️</div><p>لم يتم سحب أي علف بعد</p></div></div>
+      </div>
+
+      <!-- مصاريف إضافية -->
+      <div class="card" style="margin-bottom:14px;border-color:rgba(231,76,60,.4);">
+        <div class="card-ttl" style="color:#e74c3c;">💸 مصاريف إضافية لزريعة 2027</div>
+        <div class="fg">
+          <label class="fl">بند المصروف</label>
+          <input class="fc" type="text" id="z2027-exp-name" placeholder="مثال: أدوية، عمالة...">
+        </div>
+        <div class="fg">
+          <label class="fl">المبلغ (ج.م)</label>
+          <input class="fc" type="number" id="z2027-exp-amount" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="fg">
+          <label class="fl">التاريخ</label>
+          <input class="fc" type="date" id="z2027-exp-date">
+        </div>
+        <button class="btn" onclick="addZaria2027Expense()" style="background:linear-gradient(135deg,#922b21,#e74c3c);color:#fff;">💾 إضافة مصروف</button>
+        <div id="zaria2027-explist" style="margin-top:12px;"></div>
+      </div>
+
+      <div id="zaria2027PageEl"></div>
+    </div>
+
     <div class="pg" id="pg-logs">
       <div class="pg-ttl">📋 سجل العمليات</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
@@ -3175,6 +3328,9 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     <button class="nav-item" data-page="zaria" onclick="showPage('zaria')">
       <span class="nav-icon">🐟</span><span class="nav-label">الزريعة</span>
     </button>
+    <button class="nav-item" data-page="zaria2027" onclick="showPage('zaria2027')" style="background:linear-gradient(135deg,#ff6b6b33,#ff6b6b22);">
+      <span class="nav-icon">🐣</span><span class="nav-label">زريعة 2027</span>
+    </button>
     <button class="nav-item" data-page="logs" onclick="showPage('logs')">
       <span class="nav-icon">📋</span><span class="nav-label">السجل</span>
     </button>
@@ -3366,6 +3522,7 @@ const SECTORS = {
   sarf_canal:    { name:'الصرف القنالي',         icon:'🌊', color:'#48cae4' },
   maghzy:        { name:'المغزي',                icon:'🌿', color:'#90be6d' },
   zaria_sikka:   { name:'زرعية حوض سكة القطار',   icon:'🛤️', color:'#a78bfa' },
+  zaria2027:     { name:'زريعة 2027',            icon:'🐣', color:'#ff6b6b' },
 };
 
 // دالة مساعدة لملء أي select بالقطاعات
@@ -4244,6 +4401,7 @@ function init(){
 
 function showPage(p){
   if(p==='zaria') renderZariaPage();
+  if(p==='zaria2027') renderZaria2027Page();
   if(p==='transfers'){ loadTransfersData(); populateTransferFilters(); }
   document.querySelectorAll('.pg').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(x=>x.classList.remove('active'));
@@ -4254,7 +4412,7 @@ function showPage(p){
     const el=document.getElementById('pg-'+p); if(el) el.classList.add('active');
   }
   if(p==='movements'){initMovementsFilters();renderMovements();}
-  const idx=['dashboard','sectors','store','feed','zaria','logs','movements','transfers'].indexOf(p);
+  const idx=['dashboard','sectors','store','feed','zaria','zaria2027','logs','movements','transfers'].indexOf(p);
   if(idx>=0) document.querySelectorAll('.nb')[idx].classList.add('active');
   // Sync new bottom-nav active state
   const bnItem = document.querySelector('.bottom-nav .nav-item[data-page="'+p+'"]');
@@ -4712,6 +4870,452 @@ function renderZariaPage(){
 
   const el = document.getElementById('zariaPageEl');
   if(el) el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🐣 دوال قسم زريعة 2027 (قسم مستقل للسنة القادمة)
+// ══════════════════════════════════════════════════════════════════
+
+// حالة خاصة لزريعة 2027
+let zaria2027State = { float: 'float', unit: 'bag25' };
+
+function renderZaria2027Page(){
+  // تحديث بيانات زريعة 2027 من Firebase
+  const z2027Data = state.sectors['zaria2027'] || {};
+  const zariaList = Object.entries(z2027Data.zaria || {}).sort((a,b)=>{ 
+    const da=a[1].date||'',db2=b[1].date||''; return da>db2?-1:da<db2?1:0; 
+  });
+  const feedList = Object.entries(z2027Data.zariaFeed || {}).sort((a,b)=>{ 
+    const da=a[1].date||'',db2=b[1].date||''; return da>db2?-1:da<db2?1:0; 
+  });
+  const expList = Object.entries(z2027Data.zariaExpenses || {}).sort((a,b)=>{ 
+    const da=a[1].date||'',db2=b[1].date||''; return da>db2?-1:da<db2?1:0; 
+  });
+
+  // حساب الإجماليات
+  const totalQty = zariaList.reduce((s,e)=>s+(e[1].qty||0),0);
+  const totalCost = zariaList.reduce((s,e)=>s+((e[1].qty||0)*(e[1].price||0)),0);
+  const totalFeedKg = feedList.reduce((s,e)=>s+(e[1].weight||0),0);
+  const totalFeedCost = feedList.reduce((s,e)=>s+(e[1].cost||0),0);
+  const totalExpCost = expList.reduce((s,e)=>s+(e[1].amount||0),0);
+
+  // تحديث الإحصائيات
+  document.getElementById('z2027-total-qty').textContent = totalQty.toLocaleString('ar-EG');
+  document.getElementById('z2027-total-cost').textContent = fmtCost(totalCost) + ' ج.م';
+  document.getElementById('z2027-feed-kg').textContent = totalFeedKg.toLocaleString('ar-EG') + ' كجم';
+  document.getElementById('z2027-feed-cost').textContent = fmtCost(totalFeedCost) + ' ج.م';
+
+  // عرض قائمة الزريعة
+  const listEl = document.getElementById('zaria2027-list');
+  if(zariaList.length === 0){
+    listEl.innerHTML = '<div class="empty"><div class="ei">🐣</div><p>لم يتم تسجيل أي دفعة زريعة بعد</p></div>';
+  } else {
+    listEl.innerHTML = zariaList.map(([zid, z]) => `
+      <div class="zaria-item" style="margin-bottom:5px;">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#ff6b6b;">
+            ${z.fishType?'<span style="margin-left:6px;font-size:10px;background:rgba(255,107,107,.18);border-radius:8px;padding:1px 8px;color:#ff6b6b;">'+z.fishType+'</span> ':''}
+            ${(z.qty||0).toLocaleString('ar-EG')} قطعة
+          </div>
+          ${z.price>0 ? `<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: ${fmtCost(z.price)} · إجمالي: ${fmtCost((z.qty||0)*(z.price||0))}</div>` : ''}
+          <div style="font-size:10px;color:var(--muted);">${fmtDate(z.date)}${z.notes?' · '+z.notes:''}</div>
+        </div>
+        <div style="display:flex;gap:5px;">
+          <button class="b-del" onclick="delZaria2027('${zid}')">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // عرض قائمة سحب العلف
+  const feedEl = document.getElementById('zaria2027-feedlist');
+  if(feedList.length === 0){
+    feedEl.innerHTML = '<div class="empty"><div class="ei">🍽️</div><p>لم يتم سحب أي علف بعد</p></div>';
+  } else {
+    feedEl.innerHTML = feedList.map(([fid, f]) => `
+      <div class="zaria-item" style="margin-bottom:5px; background:rgba(0,0,0,0.15); border-color:rgba(244,162,97,0.2);">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--feed-cost-color);">${f.weight} كجم علف ${f.feedType}%</div>
+          ${f.price>0 ? `<div style="font-size:9px;color:var(--muted);">سعر الكجم: ${f.price} ج.م | إجمالي: ${fmtCost(f.cost)}</div>` : ''}
+          <div style="font-size:9px;color:var(--muted);">${fmtDate(f.date)} ${f.notes ? '· '+f.notes : ''}</div>
+        </div>
+        <button class="b-del" onclick="delZaria2027Feed('${fid}')">🗑️</button>
+      </div>
+    `).join('');
+  }
+
+  // عرض قائمة المصاريف
+  const expEl = document.getElementById('zaria2027-explist');
+  if(expList.length > 0){
+    expEl.innerHTML = `
+      <div style="margin-top:8px;border-top:1px solid rgba(231,76,60,.2);padding-top:7px;">
+        <div style="font-size:11px;font-weight:700;color:#e74c3c;margin-bottom:5px;">💸 المصاريف المسجلة:</div>
+        ${expList.map(([eid, e]) => `
+          <div class="extra-exp-item">
+            <div><div class="extra-exp-name">${e.name}</div><div style="font-size:10px;color:var(--muted);">${fmtDate(e.date)}</div></div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div class="extra-exp-val">${fmtCost(e.amount)} ج.م</div>
+              <button class="b-del" onclick="delZaria2027Expense('${eid}')">🗑️</button>
+            </div>
+          </div>
+        `).join('')}
+        ${totalExpCost > 0 ? `<div style="font-size:12px;font-weight:900;color:#e74c3c;text-align:left;padding-top:5px;">إجمالي المصاريف: ${fmtCost(totalExpCost)} ج.م</div>` : ''}
+      </div>
+    `;
+  } else {
+    expEl.innerHTML = '';
+  }
+}
+
+// حساب إجمالي سعر الزريعة 2027
+function calcZaria2027Total(){
+  const qty = parseFloat(document.getElementById('z2027-qty').value) || 0;
+  const price = parseFloat(document.getElementById('z2027-price').value) || 0;
+  const preview = document.getElementById('z2027-total-preview');
+  if(qty > 0 && price > 0){
+    preview.style.display = 'block';
+    preview.textContent = '🧮 الإجمالي: ' + fmtCost(qty * price) + ' ج.م';
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// دوال وحدة العلف لزريعة 2027
+function z2027Float(v){ 
+  zaria2027State.float = v; 
+  document.getElementById('z2027-flt-float').classList.toggle('active', v==='float'); 
+  document.getElementById('z2027-flt-sink').classList.toggle('active', v==='sink'); 
+  z2027StockInfo(); 
+}
+
+function z2027Unit(u){ 
+  zaria2027State.unit = u;
+  ['bag25','bag50','ton'].forEach(x => { 
+    const id = 'z2027-u' + (x==='bag25'?'25':x==='bag50'?'50':'ton');
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('active', u===x); 
+  });
+  const lbl = document.getElementById('z2027-qty-lbl');
+  const qtyInput = document.getElementById('z2027-qty');
+  if(lbl && qtyInput){
+    lbl.textContent = UNIT_LBL[u];
+    qtyInput.step = UNIT_STEP[u];
+    qtyInput.placeholder = UNIT_PH[u];
+  }
+  z2027Calc();
+}
+
+function z2027StockInfo(){
+  const type = document.getElementById('z2027-ftype')?.value;
+  const float = zaria2027State.float;
+  const el = document.getElementById('z2027-stock-info');
+  if(!el || !type) return;
+  const s = getStock(type, float);
+  const kg = stockToKg(s);
+  el.innerHTML = `📦 متاح بالمخزن (${type}% ${float==='float'?'🌊 عايم':'⬇️ غاطس'}): ${fmtStock(s)}<br><span style="font-size:10px;">${(kg/1000).toFixed(3)} طن — ${kg.toLocaleString('ar-EG')} كجم</span>`;
+}
+
+function z2027Calc(){
+  const val = parseFloat(document.getElementById('z2027-qty').value)||0;
+  const el = document.getElementById('z2027-calc');
+  if(!val){ el.style.display='none'; return; }
+  const delta = unitToStock(val, zaria2027State.unit);
+  const kg = stockToKg(delta);
+  el.style.display='block'; 
+  el.innerHTML=`الإجمالي: <b style="color:var(--cyan)">${kg.toLocaleString('ar-EG')} كجم</b> = <b>${(kg/1000).toFixed(3)}</b> طن`;
+}
+
+// إضافة دفعة زريعة 2027
+async function addZaria2027(){
+  const fishType = document.getElementById('z2027-fishtype').value;
+  const qty = parseInt(document.getElementById('z2027-qty').value);
+  const price = parseFloat(document.getElementById('z2027-price').value) || 0;
+  const date = document.getElementById('z2027-date').value;
+  const notes = document.getElementById('z2027-notes').value;
+
+  if(!qty || qty <= 0){ alert('أدخل كمية صحيحة'); return; }
+  if(!date){ alert('أدخل التاريخ'); return; }
+
+  const newData = { fishType, qty, price, date, notes, ts: Date.now() };
+  
+  // حفظ في Firebase تحت sectors/zaria2027/zaria/
+  const refPath = 'sectors/zaria2027/zaria';
+  await window.dbPush(window.dbRef(db, refPath), newData);
+  
+  // تسجيل في السجل
+  await window.dbPush(window.dbRef(db, 'logs'), {
+    type: 'zaria_in',
+    sector: 'zaria2027',
+    details: `${fishType}: ${qty.toLocaleString('ar-EG')} قطعة`,
+    qty,
+    cost: qty * price,
+    date,
+    ts: Date.now()
+  });
+
+  // مسح الحقول
+  document.getElementById('z2027-qty').value = '';
+  document.getElementById('z2027-price').value = '';
+  document.getElementById('z2027-notes').value = '';
+  document.getElementById('z2027-total-preview').style.display = 'none';
+
+  alert('✅ تم إضافة دفعة الزريعة بنجاح');
+  renderZaria2027Page();
+}
+
+// حذف دفعة زريعة 2027
+async function delZaria2027(zid){
+  if(!confirm('هل أنت متأكد من حذف هذه الدفعة؟')) return;
+  await window.dbRemove(window.dbRef(db, 'sectors/zaria2027/zaria/' + zid));
+  renderZaria2027Page();
+}
+
+// سحب علف من المخزن الأساسي لزريعة 2027
+async function doZaria2027FeedOut(){
+  const type = document.getElementById('z2027-ftype').value;
+  const float = zaria2027State.float;
+  const val = parseFloat(document.getElementById('z2027-qty').value) || 0;
+  const feedPrice = parseFloat(document.getElementById('z2027-feedprice').value) || 0;
+  const date = document.getElementById('z2027-feeddate').value;
+  const notes = document.getElementById('z2027-feednotes').value;
+
+  if(!val || val <= 0){ alert('أدخل كمية صحيحة'); return; }
+  if(!date){ alert('أدخل التاريخ'); return; }
+
+  // التحقق من رصيد المخزن
+  const currentStock = getStock(type, float);
+  const delta = unitToStock(val, zaria2027State.unit);
+  const newStock = addStockDelta(currentStock, '', -val, zaria2027State.unit);
+  
+  // التحقق من كفاية الرصيد
+  const currentKg = stockToKg(currentStock);
+  const outKg = stockToKg(delta);
+  if(outKg > currentKg){
+    alert(`❌ الرصيد غير كافٍ! المتاح: ${currentKg.toFixed(1)} كجم فقط`);
+    return;
+  }
+
+  const cost = feedPrice * outKg;
+
+  // تحديث المخزن الرئيسي
+  await window.dbUpdate(window.dbRef(db, `store/${type}_${float}`), newStock);
+
+  // حفظ سجل سحب العلف لزريعة 2027
+  const feedData = {
+    feedType: type,
+    floatType: float,
+    weight: outKg,
+    price: feedPrice,
+    cost,
+    date,
+    notes,
+    ts: Date.now()
+  };
+  await window.dbPush(window.dbRef(db, 'sectors/zaria2027/zariaFeed'), feedData);
+
+  // تسجيل في السجل العام
+  await window.dbPush(window.dbRef(db, 'logs'), {
+    type: 'feed_out',
+    sector: 'zaria2027',
+    feedType: type,
+    floatType: float,
+    qty: outKg,
+    feedCost: cost,
+    details: `علف ${type}% (${float==='float'?'عايم':'غاطس'}): ${outKg.toFixed(1)} كجم - زريعة 2027`,
+    date,
+    ts: Date.now(),
+    stockBefore: fmtStock(currentStock),
+    stockAfter: fmtStock(newStock)
+  });
+
+  // مسح الحقول
+  document.getElementById('z2027-qty').value = '';
+  document.getElementById('z2027-feedprice').value = '';
+  document.getElementById('z2027-feednotes').value = '';
+  document.getElementById('z2027-calc').style.display = 'none';
+
+  alert(`✅ تم سحب ${outKg.toFixed(1)} كجم علف من المخزن بنجاح`);
+  renderZaria2027Page();
+  fStockInfo(); // تحديث معلومات المخزن في صفحة التغذية أيضاً
+}
+
+// حذف سجل علف زريعة 2027 (مع إرجاع للمخزن)
+async function delZaria2027Feed(fid){
+  if(!confirm('هل أنت متأكد؟ سيتم إرجاع الكمية للمخزن الرئيسي')) return;
+  
+  const feedData = (state.sectors['zaria2027']?.zariaFeed || {})[fid];
+  if(!feedData) return;
+
+  // إرجاع الكمية للمخزن
+  const type = feedData.feedType;
+  const float = feedData.floatType || 'float';
+  const currentStock = getStock(type, float);
+  const returnedDelta = { kg: feedData.weight };
+  const newStock = addStockDelta(currentStock, 'kg', feedData.weight, 'kg');
+
+  await window.dbUpdate(window.dbRef(db, `store/${type}_${float}`), newStock);
+  await window.dbRemove(window.dbRef(db, 'sectors/zaria2027/zariaFeed/' + fid));
+
+  renderZaria2027Page();
+  fStockInfo();
+}
+
+// إضافة مصروف لزريعة 2027
+async function addZaria2027Expense(){
+  const name = document.getElementById('z2027-exp-name').value.trim();
+  const amount = parseFloat(document.getElementById('z2027-exp-amount').value);
+  const date = document.getElementById('z2027-exp-date').value;
+
+  if(!name){ alert('أدخل بند المصروف'); return; }
+  if(!amount || amount <= 0){ alert('أدخل مبلغ صحيح'); return; }
+  if(!date){ alert('أدخل التاريخ'); return; }
+
+  await window.dbPush(window.dbRef(db, 'sectors/zaria2027/zariaExpenses'), {
+    name, amount, date, ts: Date.now()
+  });
+
+  // مسح الحقول
+  document.getElementById('z2027-exp-name').value = '';
+  document.getElementById('z2027-exp-amount').value = '';
+
+  alert('✅ تم إضافة المصروف بنجاح');
+  renderZaria2027Page();
+}
+
+// حذف مصروف زريعة 2027
+async function delZaria2027Expense(eid){
+  if(!confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
+  await window.dbRemove(window.dbRef(db, 'sectors/zaria2027/zariaExpenses/' + eid));
+  renderZaria2027Page();
+}
+
+// تصدير تقرير PDF لزريعة 2027
+function exportZaria2027PDF(){
+  const z2027Data = state.sectors['zaria2027'] || {};
+  const zariaList = Object.entries(z2027Data.zaria || {});
+  const feedList = Object.entries(z2027Data.zariaFeed || {});
+  const expList = Object.entries(z2027Data.zariaExpenses || {});
+
+  const totalQty = zariaList.reduce((s,e)=>s+(e[1].qty||0),0);
+  const totalCost = zariaList.reduce((s,e)=>s+((e[1].qty||0)*(e[1].price||0)),0);
+  const totalFeedKg = feedList.reduce((s,e)=>s+(e[1].weight||0),0);
+  const totalFeedCost = feedList.reduce((s,e)=>s+(e[1].cost||0),0);
+  const totalExpCost = expList.reduce((s,e)=>s+(e[1].amount||0),0);
+  const grandTotal = totalCost + totalFeedCost + totalExpCost;
+
+  let html = `
+    <div style="direction:rtl;font-family:Cairo,sans-serif;padding:20px;color:#fff;max-width:800px;margin:auto;">
+      <div style="text-align:center;border-bottom:2px solid #ff6b6b;padding-bottom:15px;margin-bottom:20px;">
+        <h1 style="color:#ff6b6b;margin:0;">🐣 تقرير زريعة 2027</h1>
+        <p style="color:#aaa;margin:5px 0;">السنة القادمة — قسم مستقل</p>
+        <p style="color:#666;font-size:12px;">تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}</p>
+      </div>
+
+      <div style="background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.4);border-radius:12px;padding:15px;margin-bottom:20px;">
+        <h2 style="color:#ff6b6b;margin:0 0 12px 0;">📊 الملخص المالي</h2>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:8px;border-bottom:1px solid #333;">إجمالي الزريعة</td><td style="text-align:left;font-weight:bold;color:#ff6b6b;">${totalQty.toLocaleString('ar-EG')} قطعة</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #333;">تكلفة شراء الزريعة</td><td style="text-align:left;font-weight:bold;color:var(--cost-color);">${fmtCost(totalCost)}</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #333;">العلف المستهلك</td><td style="text-align:left;font-weight:bold;color:var(--feed-cost-color);">${totalFeedKg.toLocaleString('ar-EG')} كجم (${fmtCost(totalFeedCost)})</td></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid #333;">المصاريف الإضافية</td><td style="text-align:left;font-weight:bold;color:#e74c3c;">${fmtCost(totalExpCost)}</td></tr>
+          <tr style="background:rgba(255,107,107,.2);"><td style="padding:10px;font-weight:bold;color:#ff6b6b;">= الإجمالي الكلي</td><td style="text-align:left;font-weight:900;font-size:16px;color:#ff6b6b;">${fmtCost(grandTotal)}</td></tr>
+        </table>
+      </div>
+  `;
+
+  if(zariaList.length > 0){
+    html += `
+      <div style="margin-bottom:20px;">
+        <h2 style="color:#ff6b6b;margin-bottom:12px;">🐟 دفعات الزريعة</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <tr style="background:rgba(255,107,107,.2);">
+            <th style="padding:8px;text-align:right;border:1px solid #444;">النوع</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">الكمية</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">سعر القطعة</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">التكلفة</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">التاريخ</th>
+          </tr>
+          ${zariaList.map(([z,zd])=>`
+            <tr>
+              <td style="padding:6px;border:1px solid #333;">${zd.fishType||'—'}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${zd.qty?.toLocaleString('ar-EG')}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${zd.price?fmtCost(zd.price)+' ج.م':'—'}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${(zd.qty*zd.price)?fmtCost(zd.qty*zd.price):'—'}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${fmtDate(zd.date)}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
+    `;
+  }
+
+  if(feedList.length > 0){
+    html += `
+      <div style="margin-bottom:20px;">
+        <h2 style="color:var(--feed-cost-color);margin-bottom:12px;">🌿 سجل سحب العلف من المخزن</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <tr style="background:rgba(244,162,97,.2);">
+            <th style="padding:8px;text-align:right;border:1px solid #444;">نوع العلف</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">الكمية (كجم)</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">التكلفة</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">التاريخ</th>
+          </tr>
+          ${feedList.map(([f,fd])=>`
+            <tr>
+              <td style="padding:6px;border:1px solid #333;">علف ${fd.feedType}%</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${fd.weight?.toLocaleString('ar-EG')}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${fd.cost?fmtCost(fd.cost):'—'}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${fmtDate(fd.date)}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
+    `;
+  }
+
+  if(expList.length > 0){
+    html += `
+      <div style="margin-bottom:20px;">
+        <h2 style="color:#e74c3c;margin-bottom:12px;">💸 المصاريف الإضافية</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <tr style="background:rgba(231,76,60,.2);">
+            <th style="padding:8px;text-align:right;border:1px solid #444;">البند</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">المبلغ</th>
+            <th style="padding:8px;text-align:right;border:1px solid #444;">التاريخ</th>
+          </tr>
+          ${expList.map(([e,ed])=>`
+            <tr>
+              <td style="padding:6px;border:1px solid #333;">${ed.name}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${fmtCost(ed.amount)}</td>
+              <td style="padding:6px;border:1px solid #333;text-align:center;">${fmtDate(ed.date)}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
+    `;
+  }
+
+  html += '</div>';
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+}
+
+// نقل زريعة 2027 للقطاعات (فتح نافذة النقل)
+function transferZaria2027ToSectors(){
+  const z2027Data = state.sectors['zaria2027'] || {};
+  const zariaList = Object.entries(z2027Data.zaria || {});
+  
+  if(zariaList.length === 0){
+    alert('لا توجد دفعات زريعة مسجلة للنقل');
+    return;
+  }
+
+  // فتح صفحة النقل مع تصفية زريعة 2027
+  showPage('transfers');
+  // يمكن إضافة فلتر خاص هنا لاحقاً
 }
 
 function renderSectors(){
