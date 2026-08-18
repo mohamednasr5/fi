@@ -4393,7 +4393,7 @@ function init(){
   buildSectorOptions('lg-sec', true); // فلتر السجل يحتوي "الكل" + "المخزن"
 
   if(!window.db){ return; }
-  window.dbOnValue(window.dbRef(db,'sectors'), snap=>{ state.sectors=snap.val()||{}; renderSectors(); renderDashboard(); renderZariaPage(); });
+  window.dbOnValue(window.dbRef(db,'sectors'), snap=>{ state.sectors=snap.val()||{}; renderSectors(); renderDashboard(); renderZariaPage(); renderZaria2027Page(); });
   window.dbOnValue(window.dbRef(db,'store'),   snap=>{ state.store=snap.val()||{};   renderStore();   renderDashboard(); fStockInfo(); });
   window.dbOnValue(window.dbRef(db,'logs'),    snap=>{ state.logs=snap.val()||{};    renderLogs();    renderDashboard(); renderStoreLogs(); renderSectors(); });
   // PWA install banner is initialized by the unified IIFE on script load — no need to call setupPWA() here.
