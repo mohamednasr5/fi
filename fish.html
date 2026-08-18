@@ -4885,9 +4885,29 @@ function renderZaria2027Page(){
   const zariaList = Object.entries(z2027Data.zaria || {}).sort((a,b)=>{ 
     const da=a[1].date||'',db2=b[1].date||''; return da>db2?-1:da<db2?1:0; 
   });
-  const feedList = Object.entries(z2027Data.zariaFeed || {}).sort((a,b)=>{ 
+  
+  // 🌾 جمع بيانات العلف من مصدرين:
+  // 1. zariaFeed: العلف المُضاف مباشرة في قسم زريعة 2027
+  // 2. state.logs: العلف المُضاف عبر صفحة التغذية العامة (feed_out مع sector=zaria2027)
+  const feedFromZariaFeed = Object.entries(z2027Data.zariaFeed || {});
+  const feedFromLogs = Object.entries(state.logs || {})
+    .filter(([k, l]) => l && l.type === 'feed_out' && l.sector === 'zaria2027')
+    .map(([k, l]) => [k, {
+      weight: l.qty || 0,
+      cost: l.feedCost || 0,
+      feedType: l.feedType || '?',
+      date: l.date || '',
+      notes: l.details || l.notes || '',
+      fromLog: true,
+      logKey: k
+    }]);
+  
+  // دمج القائمتين وإزالة التكرارات
+  const allFeedEntries = [...feedFromZariaFeed, ...feedFromLogs];
+  const feedList = allFeedEntries.sort((a,b)=>{ 
     const da=a[1].date||'',db2=b[1].date||''; return da>db2?-1:da<db2?1:0; 
   });
+  
   const expList = Object.entries(z2027Data.zariaExpenses || {}).sort((a,b)=>{ 
     const da=a[1].date||'',db2=b[1].date||''; return da>db2?-1:da<db2?1:0; 
   });
@@ -4935,11 +4955,17 @@ function renderZaria2027Page(){
     feedEl.innerHTML = feedList.map(([fid, f]) => `
       <div class="zaria-item" style="margin-bottom:5px; background:rgba(0,0,0,0.15); border-color:rgba(244,162,97,0.2);">
         <div>
-          <div style="font-size:11px;font-weight:700;color:var(--feed-cost-color);">${f.weight} كجم علف ${f.feedType}%</div>
-          ${f.price>0 ? `<div style="font-size:9px;color:var(--muted);">سعر الكجم: ${f.price} ج.م | إجمالي: ${fmtCost(f.cost)}</div>` : ''}
+          <div style="font-size:11px;font-weight:700;color:var(--feed-cost-color);">
+            ${f.weight} كجم علف ${f.feedType}%
+            ${f.fromLog ? '<span style="font-size:9px;background:rgba(100,181,246,.2);padding:1px 6px;border-radius:4px;margin-right:5px;">من السجل</span>' : ''}
+          </div>
+          ${f.cost>0 ? `<div style="font-size:9px;color:var(--muted);">💰 ${fmtCost(f.cost)}${f.price ? ' (سعر الكجم: '+f.price+' ج.م)' : ''}</div>` : ''}
           <div style="font-size:9px;color:var(--muted);">${fmtDate(f.date)} ${f.notes ? '· '+f.notes : ''}</div>
         </div>
-        <button class="b-del" onclick="delZaria2027Feed('${fid}')">🗑️</button>
+        ${f.fromLog 
+          ? '<span style="font-size:10px;color:var(--muted);" title="يمكن حذفه من صفحة السجل">📋</span>' 
+          : `<button class="b-del" onclick="delZaria2027Feed('${fid}')">🗑️</button>`
+        }
       </div>
     `).join('');
   }
