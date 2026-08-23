@@ -2678,6 +2678,7 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       <button class="nb" onclick="showPage('store')">🏭 المخزن</button>
       <button class="nb" onclick="showPage('feed')">🍽️ التغذية</button>
       <button class="nb" onclick="showPage('zaria')">🐟 الزريعة</button>
+      <button class="nb" onclick="showPage('zaria-sectors')" style="background:linear-gradient(135deg,#00b4d8,#06d6a0);">🐟 زريعة القطاعات</button>
       <button class="nb" onclick="showPage('logs')">📋 السجل</button>
       <button class="nb" onclick="showPage('movements')">🔄 الحركات</button>
       <button class="nb" onclick="showPage('transfers')" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe);">📊 تقارير النقل</button>
@@ -2998,6 +2999,44 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       </div>
 
       <div id="zaria2027PageEl"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ -->
+    <!-- 🐟 صفحة زريعة القطاعات (قسم منفصل لكل قطاع) -->
+    <!-- ══════════════════════════════════════════ -->
+    <div class="pg" id="pg-zaria-sectors">
+      <div class="pg-ttl" style="background:linear-gradient(135deg,#00b4d833,#06d6a022);border-right:4px solid #00b4d8;">🐟 قسم زريعة القطاعات</div>
+      <div class="ibox" style="margin-bottom:14px;background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.3);">
+        <b>📌 قسم منفصل:</b> هنا يمكنك إدارة زريعة كل قطاع بشكل مستقل — إضافة، تعديل، حذف، ونقل الزريعة بين القطاعات.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="btn btn-gold" style="width:auto;padding:10px 14px;" onclick="exportZariaSectorsPDF()">📄 تصدير تقرير زريعة القطاعات (PDF)</button>
+        <button class="btn" style="width:auto;padding:10px 14px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;" onclick="openZariaTransferModal()">🔄 نقل زريعة بين القطاعات</button>
+      </div>
+
+      <!-- الإحصائيات العامة -->
+      <div id="zaria-sectors-summary" style="background:linear-gradient(135deg,rgba(0,180,216,.12),rgba(6,214,160,.08));border:1px solid rgba(0,180,216,.3);border-radius:var(--r);padding:15px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:#00b4d8;margin-bottom:10px;">📊 ملخص زriعة جميع القطاعات</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;" id="zaria-sectors-stats">
+          <div class="sum-chip" style="background:rgba(0,180,216,.1);border-color:rgba(0,180,216,.3);">
+            <div class="v" style="color:#00b4d8;" id="zs-total-qty">0</div><div class="l">إجمالي الزريعة (قطعة)</div>
+          </div>
+          <div class="sum-chip" style="background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3);">
+            <div class="v" style="color:#ff6b6b;" id="zs-total-cost">0</div><div class="l">تكلفة شراء الزريعة</div>
+          </div>
+          <div class="sum-chip" style="background:var(--feed-cost-bg);border-color:var(--feed-cost-border);">
+            <div class="v" style="color:var(--feed-cost-color);" id="zs-feed-kg">0</div><div class="l">إجمالي علف الزريعة</div>
+          </div>
+          <div class="sum-chip" style="background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.3);">
+            <div class="v" style="color:#e74c3c;" id="zs-expenses">0</div><div class="l">مصاريف الزريعة</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- قائمة القطاعات مع زريعتها -->
+      <div id="zaria-sectors-container">
+        <div class="loading"><div class="spin"></div> جاري تحميل بيانات الزريعة...</div>
+      </div>
     </div>
 
     <div class="pg" id="pg-logs">
@@ -3330,6 +3369,9 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     </button>
     <button class="nav-item" data-page="zaria2027" onclick="showPage('zaria2027')" style="background:linear-gradient(135deg,#ff6b6b33,#ff6b6b22);">
       <span class="nav-icon">🐣</span><span class="nav-label">زريعة 2027</span>
+    </button>
+    <button class="nav-item" data-page="zaria-sectors" onclick="showPage('zaria-sectors')" style="background:linear-gradient(135deg,#00b4d833,#06d6a022);">
+      <span class="nav-icon">🐟</span><span class="nav-label">زريعة القطاعات</span>
     </button>
     <button class="nav-item" data-page="logs" onclick="showPage('logs')">
       <span class="nav-icon">📋</span><span class="nav-label">السجل</span>
@@ -4402,6 +4444,7 @@ function init(){
 function showPage(p){
   if(p==='zaria') renderZariaPage();
   if(p==='zaria2027') renderZaria2027Page();
+  if(p==='zaria-sectors') renderZariaSectorsPage();
   if(p==='transfers'){ loadTransfersData(); populateTransferFilters(); }
   document.querySelectorAll('.pg').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(x=>x.classList.remove('active'));
@@ -4412,7 +4455,7 @@ function showPage(p){
     const el=document.getElementById('pg-'+p); if(el) el.classList.add('active');
   }
   if(p==='movements'){initMovementsFilters();renderMovements();}
-  const idx=['dashboard','sectors','store','feed','zaria','zaria2027','logs','movements','transfers'].indexOf(p);
+  const idx=['dashboard','sectors','store','feed','zaria','zaria-sectors','zaria2027','logs','movements','transfers'].indexOf(p);
   if(idx>=0) document.querySelectorAll('.nb')[idx].classList.add('active');
   // Sync new bottom-nav active state
   const bnItem = document.querySelector('.bottom-nav .nav-item[data-page="'+p+'"]');
@@ -4998,6 +5041,894 @@ function renderZaria2027Page(){
   }
 }
 
+
+// ══════════════════════════════════════════════════════════════════
+// 🐟 دوال قسم زريعة القطاعات (قسم منفصل لكل قطاع)
+// ══════════════════════════════════════════════════════════════════
+
+// عرض صفحة زريعة القطاعات
+function renderZariaSectorsPage(){
+  const container = document.getElementById('zaria-sectors-container');
+  if(!container) return;
+  
+  let html = '';
+  let grandTotalQty = 0;
+  let grandTotalCost = 0;
+  let grandTotalFeedKg = 0;
+  let grandTotalFeedCost = 0;
+  let grandTotalExpenses = 0;
+  let hasAny = false;
+
+  // استبعاد zaria2027 من القائمة - له قسم خاص
+  const sectorsToShow = Object.entries(SECTORS).filter(([k]) => k !== 'zaria2027');
+
+  sectorsToShow.forEach(([k, sec]) => {
+    const data = state.sectors[k] || {};
+    const zariaList = Object.entries(data.zaria || {}).sort((a,b) => {
+      const da = a[1].date || '', db2 = b[1].date || '';
+      return da > db2 ? -1 : da < db2 ? 1 : 0;
+    });
+    
+    const zariaFeedList = Object.entries(data.zariaFeed || {}).sort((a,b) => {
+      const da = a[1].date || '', db2 = b[1].date || '';
+      return da > db2 ? -1 : da < db2 ? 1 : 0;
+    });
+    
+    const zariaExpList = Object.entries(data.zariaExpenses || {}).sort((a,b) => {
+      const da = a[1].date || '', db2 = b[1].date || '';
+      return da > db2 ? -1 : da < db2 ? 1 : 0;
+    });
+
+    // حساب إجماليات هذا القطاع
+    const sectorQty = zariaList.reduce((s, e) => s + (e[1].qty || 0), 0);
+    const sectorCost = zariaList.reduce((s, e) => s + ((e[1].qty || 0) * (e[1].price || 0)), 0);
+    const sectorFeedKg = zariaFeedList.reduce((s, e) => s + (e[1].weight || 0), 0);
+    const sectorFeedCost = zariaFeedList.reduce((s, e) => s + (e[1].cost || 0), 0);
+    const sectorExpenses = zariaExpList.reduce((s, e) => s + (e[1].amount || 0), 0);
+
+    if(sectorQty > 0 || sectorFeedKg > 0 || sectorExpenses > 0) hasAny = true;
+    
+    grandTotalQty += sectorQty;
+    grandTotalCost += sectorCost;
+    grandTotalFeedKg += sectorFeedKg;
+    grandTotalFeedCost += sectorFeedCost;
+    grandTotalExpenses += sectorExpenses;
+
+    // بطاقة القطاع
+    html += '<div class="card" style="margin-bottom:16px;border:2px solid ' + sec.color + '44;background:linear-gradient(135deg,' + sec.color + '11,' + sec.color + '05);">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">';
+    html += '<div style="display:flex;align-items:center;gap:10px;">';
+    html += '<div style="background:linear-gradient(135deg,' + sec.color + ',' + sec.color + '88);width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;">' + sec.icon + '</div>';
+    html += '<div>';
+    html += '<div style="font-size:16px;font-weight:900;color:' + sec.color + ';">🐟 زriعة ' + sec.name + '</div>';
+    html += '<div style="font-size:11px;color:var(--muted);">إدارة كاملة للزريعة والعلف والمصاريف</div>';
+    html += '</div></div>';
+    
+    // أزرار التحكم
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+    html += '<button class="btn btn-zaria btn-sm" onclick="toggleZSSectorForm(\'' + k + '\')" id="zs-btn-' + k + '">➕ إضافة زريعة</button>';
+    html += '<button class="btn btn-sm" style="background:linear-gradient(135deg,#c97d20,var(--feed-cost-color));color:var(--deep);" onclick="toggleZSSectorFeedForm(\'' + k + '\')">🍽️ علف</button>';
+    html += '<button class="btn btn-sm" style="background:linear-gradient(135deg,#922b21,#e74c3c);color:#fff;" onclick="toggleZSSectorExpenseForm(\'' + k + '\')">💸 مصاريف</button>';
+    html += '</div></div>';
+
+    // ملخص سريع
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:rgba(0,0,0,.15);border-radius:10px;">';
+    html += '<div style="flex:1;min-width:100px;text-align:center;"><div style="font-size:14px;font-weight:900;color:#00b4d8;">' + sectorQty.toLocaleString('ar-EG') + '</div><div style="font-size:10px;color:var(--muted);">قطعة</div></div>';
+    if(sectorCost > 0) html += '<div style="flex:1;min-width:100px;text-align:center;"><div style="font-size:14px;font-weight:900;color:#ff6b6b;">' + fmtCost(sectorCost) + '</div><div style="font-size:10px;color:var(--muted);">تكلفة الزريعة</div></div>';
+    if(sectorFeedKg > 0) html += '<div style="flex:1;min-width:100px;text-align:center;"><div style="font-size:14px;font-weight:900;color:var(--feed-cost-color);">' + sectorFeedKg.toLocaleString('ar-EG') + ' كجم</div><div style="font-size:10px;color:var(--muted);">علف الزريعة</div></div>';
+    if(sectorExpenses > 0) html += '<div style="flex:1;min-width:100px;text-align:center;"><div style="font-size:14px;font-weight:900;color:#e74c3c;">' + fmtCost(sectorExpenses) + '</div><div style="font-size:10px;color:var(--muted);">مصاريف</div></div>';
+    html += '</div>';
+
+    // نموذج إضافة زريعة
+    html += '<div id="zs-form-' + k + '" style="display:none;margin-bottom:12px;">';
+    html += renderZSSectorZariaForm(k);
+    html += '</div>';
+
+    // نموذج إضافة علف
+    html += '<div id="zs-feed-form-' + k + '" style="display:none;margin-bottom:12px;">';
+    html += renderZSSectorFeedForm(k);
+    html += '</div>';
+
+    // نموذج إضافة مصروف
+    html += '<div id="zs-exp-form-' + k + '" style="display:none;margin-bottom:12px;">';
+    html += renderZSSectorExpenseForm(k);
+    html += '</div>';
+
+    // قائمة الزriعة المسجلة
+    if(zariaList.length > 0){
+      html += '<div style="margin-top:10px;"><div class="card-ttl" style="color:#00b4d8;font-size:13px;">📋 دفعات الزriعة المسجلة (' + zariaList.length + ')</div>';
+      html += '<div style="max-height:250px;overflow-y:auto;">';
+      zariaList.forEach(([zid, z]) => {
+        html += '<div class="zaria-item" style="margin-bottom:5px;background:rgba(0,180,216,.08);border-color:rgba(0,180,216,.2);">';
+        html += '<div style="flex:1;">';
+        html += '<div style="font-size:12px;font-weight:700;color:#00b4d8;">';
+        if(z.fishType) html += '<span style="margin-left:6px;font-size:10px;background:rgba(0,180,216,.18);border-radius:8px;padding:1px 8px;color:#00b4d8;">' + z.fishType + '</span> ';
+        html += (z.qty || 0).toLocaleString('ar-EG') + ' قطعة</div>';
+        if(z.price > 0) html += '<div style="font-size:10px;color:var(--muted);">💰 سعر القطعة: ' + fmtCost(z.price) + ' · إجمالي: ' + fmtCost((z.qty || 0) * (z.price || 0)) + '</div>';
+        html += '<div style="font-size:10px;color:var(--muted);">' + fmtDate(z.date) + (z.notes ? ' · ' + z.notes : '') + '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:4px;align-items:center;">';
+        html += '<button class="b-edit" onclick="editZSZaria(\'' + k + '\',\'' + zid + '\')" title="تعديل">✏️</button>';
+        html += '<button class="b-del" onclick="delZSZaria(\'' + k + '\',\'' + zid + '\')" title="حذف">🗑️</button>';
+        html += '<button class="btn btn-sm" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;font-size:10px;padding:4px 8px;" onclick="openZSSingleTransferModal(\'' + k + '\',\'' + zid + '\')">🔄 نقل</button>';
+        html += '</div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    // قائمة علف الزريعة
+    if(zariaFeedList.length > 0){
+      html += '<div style="margin-top:10px;"><div class="card-ttl" style="color:var(--feed-cost-color);font-size:13px;">🌿 سجل علف الزريعة (' + zariaFeedList.length + ')</div>';
+      html += '<div style="max-height:200px;overflow-y:auto;">';
+      zariaFeedList.forEach(([fid, f]) => {
+        html += '<div class="zaria-item" style="margin-bottom:5px;background:rgba(0,0,0,.15);border-color:rgba(244,162,97,.2);">';
+        html += '<div style="flex:1;">';
+        html += '<div style="font-size:11px;font-weight:700;color:var(--feed-cost-color);">' + (f.weight || 0) + ' كجم علف ' + (f.feedType || '?') + '%</div>';
+        if(f.cost > 0) html += '<div style="font-size:9px;color:var(--muted);">💰 ' + fmtCost(f.cost) + '</div>';
+        html += '<div style="font-size:9px;color:var(--muted);">' + fmtDate(f.date) + (f.notes ? ' · ' + f.notes : '') + '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:4px;align-items:center;">';
+        html += '<button class="b-del" onclick="delZSFeed(\'' + k + '\',\'' + fid + '\')">🗑️</button>';
+        html += '</div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    // قائمة المصاريف
+    if(zariaExpList.length > 0){
+      html += '<div style="margin-top:10px;"><div class="card-ttl" style="color:#e74c3c;font-size:13px;">💸 المصاريف (' + zariaExpList.length + ')</div>';
+      html += '<div style="max-height:150px;overflow-y:auto;">';
+      zariaExpList.forEach(([eid, e]) => {
+        html += '<div class="extra-exp-item"><div><div class="extra-exp-name">' + e.name + '</div>';
+        html += '<div style="font-size:10px;color:var(--muted);">' + fmtDate(e.date) + '</div></div>';
+        html += '<div style="display:flex;align-items:center;gap:6px;"><div class="extra-exp-val">' + fmtCost(e.amount) + ' ج.م</div>';
+        html += '<button class="b-del" onclick="delZSExpense(\'' + k + '\',\'' + eid + '\')">🗑️</button></div></div>';
+      });
+      if(sectorExpenses > 0) html += '<div style="font-size:12px;font-weight:900;color:#e74c3c;text-align:left;padding-top:5px;">إجمالي المصاريف: ' + fmtCost(sectorExpenses) + ' ج.م</div>';
+      html += '</div></div>';
+    }
+
+    // الإجمالي الكلي للقطاع
+    const sectorTotal = sectorCost + sectorFeedCost + sectorExpenses;
+    if(sectorTotal > 0 || sectorQty > 0){
+      html += '<div style="margin-top:10px;border-radius:10px;overflow:hidden;border:2px solid ' + sec.color + '44;">';
+      html += '<div style="background:linear-gradient(135deg,' + sec.color + '33,' + sec.color + '11);padding:8px 13px;border-bottom:1px solid ' + sec.color + '33;">';
+      html += '<span style="font-size:12px;font-weight:800;color:' + sec.color + ';">📊 إجمالي مصاريف الزريعة — ' + sec.name + '</span>';
+      html += '</div><div style="padding:10px 13px;display:flex;flex-direction:column;gap:4px;">';
+      if(sectorCost > 0) html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#00b4d8;">🐟 تكاليف الزريعة</span><span style="color:var(--cost-color);font-weight:700;">' + fmtCost(sectorCost) + ' ج.م</span></div>';
+      if(sectorFeedKg > 0){
+        if(sectorFeedCost > 0) html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:var(--feed-cost-color);">🌾 تكاليف علف الزريعة</span><span style="color:var(--feed-cost-color);font-weight:700;">' + fmtCost(sectorFeedCost) + ' ج.م</span></div>';
+        else html += '<div style="display:flex;justify-content:space-between;font-size:11px;align-items:center;"><span style="color:var(--feed-cost-color);">🌾 علف الزريعة</span><span style="font-size:10px;color:var(--muted);">' + sectorFeedKg + ' كجم — لم يُدخَل سعر</span></div>';
+      }
+      if(sectorExpenses > 0) html += '<div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:#e74c3c;">💸 مصاريف الزريعة</span><span style="color:#e74c3c;font-weight:700;">' + fmtCost(sectorExpenses) + ' ج.م</span></div>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid ' + sec.color + '33;padding-top:6px;margin-top:2px;">';
+      html += '<span style="font-size:12px;font-weight:700;color:' + sec.color + ';">= الإجمالي الكلي</span>';
+      html += '<span style="font-size:15px;font-weight:900;color:' + sec.color + ';">' + fmtCost(sectorTotal) + ' ج.م</span>';
+      html += '</div></div></div>';
+    }
+
+    html += '</div>';
+  });
+
+  // تحديث الإحصائيات العامة
+  document.getElementById('zs-total-qty').textContent = grandTotalQty.toLocaleString('ar-EG');
+  document.getElementById('zs-total-cost').textContent = fmtCost(grandTotalCost);
+  document.getElementById('zs-feed-kg').textContent = grandTotalFeedKg.toLocaleString('ar-EG') + ' كجم';
+  document.getElementById('zs-expenses').textContent = fmtCost(grandTotalExpenses);
+
+  if(!hasAny){
+    html = '<div class="empty"><div class="ei">🐟</div><p>لا توجد زريعة مسجلة في أي قطاع حتى الآن</p><p style="font-size:12px;color:var(--muted);">اضغط على "إضافة زريعة" لأي قطاع للبدء</p></div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// نموذج إضافة زريعة لقطاع محدد
+function renderZSSectorZariaForm(secKey){
+  const sec = SECTORS[secKey];
+  if(!sec) return '';
+  
+  return `
+    <div class="card" style="background:rgba(0,180,216,.08);border:1px solid rgba(0,180,216,.3);">
+      <div class="card-ttl" style="color:#00b4d8;">➕ إضافة زريعة جديدة — ${sec.name}</div>
+      <div class="fg">
+        <label class="fl">نوع السمك</label>
+        <select class="fc" id="zs-fishtype-${secKey}">
+          <option value="بوري">🐟 بوري</option>
+          <option value="طوبار">🐠 طوبار</option>
+          <option value="شبار">🐡 شبار</option>
+          <option value="بياض">🫧 بياض</option>
+          <option value="بلطي">🐠 بلطي</option>
+          <option value="مبروك">🐟 مبروك</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">العدد (قطعة)</label>
+        <input type="number" class="fc" id="zs-qty-${secKey}" placeholder="أدخل عدد القطع" min="1" step="1">
+      </div>
+      <div class="fg">
+        <label class="fl" style="color:var(--cost-color);">💰 سعر القطعة (ج.م)</label>
+        <input type="number" class="fc" id="zs-price-${secKey}" placeholder="سعر القطعة الواحدة" min="0" step="0.01">
+      </div>
+      <div class="fg">
+        <label class="fl">تاريخ الإنزال</label>
+        <input type="date" class="fc" id="zs-date-${secKey}">
+      </div>
+      <div class="fg">
+        <label class="fl">ملاحظات (اختياري)</label>
+        <input type="text" class="fc" id="zs-notes-${secKey}" placeholder="ملاحظات إضافية">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-green" onclick="addZSZaria('${secKey}')" style="flex:1;">💾 حفظ الزريعة</button>
+        <button class="btn btn-danger" onclick="toggleZSSectorForm('${secKey}')" style="flex:0;">✕</button>
+      </div>
+      <div id="zs-preview-${secKey}" style="margin-top:8px;display:none;"></div>
+    </div>
+  `;
+}
+
+// نموذج إضافة علف لزريعة قطاع
+function renderZSSectorFeedForm(secKey){
+  const sec = SECTORS[secKey];
+  if(!sec) return '';
+  
+  return `
+    <div class="card" style="background:rgba(244,162,97,.08);border:1px solid rgba(244,162,97,.3);">
+      <div class="card-ttl" style="color:var(--feed-cost-color);">🍽️ إضافة علف زريعة — ${sec.name}</div>
+      <div class="fg">
+        <label class="fl">نوع العلف</label>
+        <select class="fc" id="zs-feed-type-${secKey}" onchange="updateZSStockInfo('${secKey}')">
+          <option value="30">علف 30%</option>
+          <option value="18">علف 18%</option>
+          <option value="25">علف 25%</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">نوع الطفو</label>
+        <div class="tg">
+          <button class="tb active" id="zs-flt-float-${secKey}" onclick="zsFloat('${secKey}','float')">🌊 عايم</button>
+          <button class="tb" id="zs-flt-sink-${secKey}" onclick="zsFloat('${secKey}','sink')">⬇️ غاطس</button>
+        </div>
+      </div>
+      <div id="zs-stock-info-${secKey}" class="ibox" style="margin-bottom:10px;">اختر نوع العلف لعرض المتاح</div>
+      <div class="fg">
+        <label class="fl">الكمية (كجم)</label>
+        <input type="number" class="fc" id="zs-feed-qty-${secKey}" placeholder="أدخل الكمية بالكيلو" min="0" step="0.01">
+      </div>
+      <div class="fg">
+        <label class="fl" style="color:var(--feed-cost-color);">💵 سعر الكيلو (اختياري)</label>
+        <input type="number" class="fc" id="zs-feed-price-${secKey}" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="fg">
+        <label class="fl">التاريخ</label>
+        <input type="date" class="fc" id="zs-feed-date-${secKey}">
+      </div>
+      <div class="fg">
+        <label class="fl">ملاحظات</label>
+        <input type="text" class="fc" id="zs-feed-notes-${secKey}" placeholder="ملاحظات إضافية">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="addZSFeed('${secKey}')" style="flex:1;background:linear-gradient(135deg,#c97d20,var(--feed-cost-color));color:var(--deep);">💾 حفظ العلف</button>
+        <button class="btn btn-danger" onclick="toggleZSSectorFeedForm('${secKey}')" style="flex:0;">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+// نموذج إضافة مصروف لزريعة قطاع
+function renderZSSectorExpenseForm(secKey){
+  const sec = SECTORS[secKey];
+  if(!sec) return '';
+  
+  return `
+    <div class="card" style="background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.3);">
+      <div class="card-ttl" style="color:#e74c3c;">💸 إضافة مصروف — ${sec.name}</div>
+      <div class="fg">
+        <label class="fl">بند المصروف</label>
+        <input type="text" class="fc" id="zs-exp-name-${secKey}" placeholder="مثال: أدوية، عمالة، نقل...">
+      </div>
+      <div class="fg">
+        <label class="fl">المبلغ (ج.م)</label>
+        <input type="number" class="fc" id="zs-exp-amount-${secKey}" placeholder="0.00" min="0" step="0.01">
+      </div>
+      <div class="fg">
+        <label class="fl">التاريخ</label>
+        <input type="date" class="fc" id="zs-exp-date-${secKey}">
+      </div>
+      <div class="fg">
+        <label class="fl">ملاحظات</label>
+        <input type="text" class="fc" id="zs-exp-notes-${secKey}" placeholder="ملاحظات إضافية">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="addZSExpense('${secKey}')" style="flex:1;background:linear-gradient(135deg,#922b21,#e74c3c);color:#fff;">💾 حفظ المصروف</button>
+        <button class="btn btn-danger" onclick="toggleZSSectorExpenseForm('${secKey}')" style="flex:0;">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+// تبديل عرض نموذج الزريعة
+function toggleZSSectorForm(secKey){
+  const formEl = document.getElementById('zs-form-' + secKey);
+  if(formEl) formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
+}
+
+// تبديل عرض نموذج العلف
+function toggleZSSectorFeedForm(secKey){
+  const formEl = document.getElementById('zs-feed-form-' + secKey);
+  if(formEl) formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
+  if(formEl.style.display === 'block') updateZSStockInfo(secKey);
+}
+
+// تبديل عرض نموذج المصاريف
+function toggleZSSectorExpenseForm(secKey){
+  const formEl = document.getElementById('zs-exp-form-' + secKey);
+  if(formEl) formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
+}
+
+// حالة الطفو لكل قطاع
+const zsFloatState = {};
+
+function zsFloat(secKey, v){
+  zsFloatState[secKey] = v;
+  const floatBtn = document.getElementById('zs-flt-float-' + secKey);
+  const sinkBtn = document.getElementById('zs-flt-sink-' + secKey);
+  if(floatBtn) floatBtn.classList.toggle('active', v === 'float');
+  if(sinkBtn) sinkBtn.classList.toggle('active', v === 'sink');
+  updateZSStockInfo(secKey);
+}
+
+// تحديث معلومات المخزن
+function updateZSStockInfo(secKey){
+  const type = document.getElementById('zs-feed-type-' + secKey)?.value;
+  const float = zsFloatState[secKey] || 'float';
+  const el = document.getElementById('zs-stock-info-' + secKey);
+  if(!el || !type) return;
+  const s = getStock(type, float);
+  const kg = stockToKg(s);
+  el.innerHTML = `📦 متاح بالمخزن (${type}% ${float==='float'?'🌊 عايم':'⬇️ غاطس'}): ${fmtStock(s)}<br><span style="font-size:10px;">${(kg/1000).toFixed(3)} طن — ${kg.toLocaleString('ar-EG')} كجم</span>`;
+}
+
+// إضافة زriعة لقطاع
+async function addZSZaria(secKey){
+  const fishType = document.getElementById('zs-fishtype-' + secKey)?.value || '';
+  const qty = parseInt(document.getElementById('zs-qty-' + secKey)?.value) || 0;
+  const price = parseFloat(document.getElementById('zs-price-' + secKey)?.value) || 0;
+  const date = document.getElementById('zs-date-' + secKey)?.value || '';
+  const notes = document.getElementById('zs-notes-' + secKey)?.value || '';
+
+  if(!qty || qty <= 0){ alert('أدخل كمية صحيحة'); return; }
+  if(!date){ alert('أدخل التاريخ'); return; }
+
+  const newData = { fishType, qty, price, date, notes, ts: Date.now() };
+  
+  await window.dbPush(window.dbRef(db, 'sectors/' + secKey + '/zaria'), newData);
+  
+  // تسجيل في السجل
+  await window.dbPush(window.dbRef(db, 'logs'), {
+    type: 'zaria_in',
+    sector: secKey,
+    details: `${fishType}: ${qty.toLocaleString('ar-EG')} قطعة`,
+    qty,
+    cost: qty * price,
+    date,
+    ts: Date.now()
+  });
+
+  toast('✅ تم إضافة الزريعة بنجاح', 'ok');
+  toggleZSSectorForm(secKey);
+  renderZariaSectorsPage();
+  renderZariaPage();
+  renderDashboard();
+}
+
+// تعديل زريعة
+async function editZSZaria(secKey, zid){
+  const z = (state.sectors[secKey]?.zaria || {})[zid];
+  if(!z) return;
+  
+  const newFishType = prompt('نوع السمك:', z.fishType || '');
+  const newQty = prompt('العدد (قطعة):', z.qty || '');
+  const newPrice = prompt('سعر القطعة:', z.price || '');
+  const newNotes = prompt('ملاحظات:', z.notes || '');
+  
+  if(newQty === null) return; // إلغاء
+  
+  const upd = {};
+  if(newFishType !== null) upd.fishType = newFishType;
+  if(newQty !== null && !isNaN(parseInt(newQty))) upd.qty = parseInt(newQty);
+  if(newPrice !== null && !isNaN(parseFloat(newPrice))) upd.price = parseFloat(newPrice);
+  if(newNotes !== null) upd.notes = newNotes;
+  
+  await window.dbUpdate(window.dbRef(db, 'sectors/' + secKey + '/zaria/' + zid), upd);
+  toast('✅ تم تحديث الزريعة', 'ok');
+  renderZariaSectorsPage();
+  renderZariaPage();
+}
+
+// حذف زريعة
+async function delZSZaria(secKey, zid){
+  if(!confirm('هل أنت متأكد من حذف هذه الزريعة؟')) return;
+  await window.dbRemove(window.dbRef(db, 'sectors/' + secKey + '/zaria/' + zid));
+  toast('🗑️ تم حذف الزريعة', 'ok');
+  renderZariaSectorsPage();
+  renderZariaPage();
+  renderDashboard();
+}
+
+// إضافة علف لزريعة قطاع
+async function addZSFeed(secKey){
+  const feedType = document.getElementById('zs-feed-type-' + secKey)?.value || '';
+  const weight = parseFloat(document.getElementById('zs-feed-qty-' + secKey)?.value) || 0;
+  const price = parseFloat(document.getElementById('zs-feed-price-' + secKey)?.value) || 0;
+  const date = document.getElementById('zs-feed-date-' + secKey)?.value || '';
+  const notes = document.getElementById('zs-feed-notes-' + secKey)?.value || '';
+  const float = zsFloatState[secKey] || 'float';
+
+  if(!weight || weight <= 0){ alert('أدخل كمية صحيحة'); return; }
+  if(!date){ alert('أدخل التاريخ'); return; }
+
+  const feedData = { feedType, weight, cost: weight * price, price, date, notes, float, ts: Date.now() };
+  
+  await window.dbPush(window.dbRef(db, 'sectors/' + secKey + '/zariaFeed'), feedData);
+  
+  // تسجيل في السجل
+  await window.dbPush(window.dbRef(db, 'logs'), {
+    type: 'zaria_feed',
+    sector: secKey,
+    details: `علف ${feedType}%: ${weight} كجم`,
+    weight,
+    cost: weight * price,
+    date,
+    ts: Date.now()
+  });
+
+  toast('✅ تم إضافة علف الزريعة', 'ok');
+  toggleZSSectorFeedForm(secKey);
+  renderZariaSectorsPage();
+  renderZariaPage();
+}
+
+// حذف علف زريعة
+async function delZSFeed(secKey, fid){
+  if(!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+  await window.dbRemove(window.dbRef(db, 'sectors/' + secKey + '/zariaFeed/' + fid));
+  toast('🗑️ تم حذف سجل العلف', 'ok');
+  renderZariaSectorsPage();
+  renderZariaPage();
+}
+
+// إضافة مصروف لزريعة قطاع
+async function addZSExpense(secKey){
+  const name = document.getElementById('zs-exp-name-' + secKey)?.value || '';
+  const amount = parseFloat(document.getElementById('zs-exp-amount-' + secKey)?.value) || 0;
+  const date = document.getElementById('zs-exp-date-' + secKey)?.value || '';
+  const notes = document.getElementById('zs-exp-notes-' + secKey)?.value || '';
+
+  if(!name){ alert('أدخل بند المصروف'); return; }
+  if(!amount || amount <= 0){ alert('أدخل المبلغ'); return; }
+  if(!date){ alert('أدخل التاريخ'); return; }
+
+  const expData = { name, amount, date, notes, ts: Date.now() };
+  
+  await window.dbPush(window.dbRef(db, 'sectors/' + secKey + '/zariaExpenses'), expData);
+
+  toast('✅تم إضافة المصروف', 'ok');
+  toggleZSSectorExpenseForm(secKey);
+  renderZariaSectorsPage();
+  renderZariaPage();
+}
+
+// حذف مصروف زريعة
+async function delZSExpense(secKey, eid){
+  if(!confirm('هل أنت متأكد من حذف هذا المصروف؟')) return;
+  await window.dbRemove(window.dbRef(db, 'sectors/' + secKey + '/zariaExpenses/' + eid));
+  toast('🗑️ تم حذف المصروف', 'ok');
+  renderZariaSectorsPage();
+  renderZariaPage();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🔄 مودال نقل الزريعة بين القطاعات (من قسم زريعة القطاعات)
+// ══════════════════════════════════════════════════════════════════
+
+let zsTransferState = { sourceSec: null, sourceZid: null };
+
+// فتح مودال النقل العام
+function openZariaTransferModal(){
+  const old = document.getElementById('zs-transfer-modal');
+  if(old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'mo';
+  modal.id = 'zs-transfer-modal';
+  modal.onclick = (e) => { if(e.target === modal) closeZariaTransferModal(); };
+  
+  modal.innerHTML = `
+    <div class="mo-box transfer-modal-box" style="max-width:500px;">
+      <div class="mo-hdl"></div>
+      <div class="mo-ttl">🔄 نقل زريعة بين القطاعات</div>
+      
+      <!-- اختيار القطاع المصدر -->
+      <div class="transfer-step">
+        <div class="transfer-step-title">📤 الخطوة 1: اختر القطاع المصدر</div>
+        <select class="fc" id="zs-src-sec" onchange="onZSSourceChange()" style="width:100%;margin-bottom:8px;">
+          <option value="">-- اختر القطاع المصدر --</option>
+          ${Object.entries(SECTORS).filter(([k]) => k !== 'zaria2027').map(([k, s]) => `<option value="${k}">${s.icon} ${s.name}</option>`).join('')}
+        </select>
+        <div id="zs-src-batches" style="max-height:200px;overflow-y:auto;"></div>
+      </div>
+
+      <!-- اختيار الدفعة -->
+      <div class="transfer-step" style="margin-top:15px;" id="zs-batch-step" style="display:none;">
+        <div class="transfer-step-title">📦 الخطوة 2: اختر دفعة الزريعة</div>
+        <div id="zs-batch-list"></div>
+      </div>
+
+      <!-- اختيار القطاع المستهدف -->
+      <div class="transfer-step" style="margin-top:15px;" id="zs-target-step" style="display:none;">
+        <div class="transfer-step-title">📥 الخطوة 3: اختر القطاع المستهدف</div>
+        <select class="fc" id="zs-target-sec" style="width:100%;margin-bottom:8px;">
+          <option value="">-- اختر القطاع المستهدف --</option>
+        </select>
+      </div>
+
+      <!-- كمية النقل -->
+      <div class="transfer-step" style="margin-top:15px;" id="zs-qty-step" style="display:none;">
+        <div class="transfer-step-title">🔢 الخطوة 4: كمية النقل</div>
+        <div class="fg">
+          <label class="fl">عدد الأسماك المنقولة</label>
+          <input type="number" class="fc" id="zs-transfer-qty" min="1" step="1" placeholder="أدخل العدد" style="width:100%;">
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;cursor:pointer;">
+          <input type="checkbox" id="zs-full-transfer" checked style="cursor:pointer;">
+          <span>☑️ نقل كامل الدفعة</span>
+        </label>
+      </div>
+
+      <!-- معاينة -->
+      <div class="transfer-preview-container" style="margin-top:15px;">
+        <div id="zs-transfer-preview" class="transfer-preview">
+          <div class="preview-empty">📋 اختر القطاع المصدر للبدء</div>
+        </div>
+      </div>
+
+      <!-- أزرار -->
+      <div style="display:flex;gap:10px;margin-top:15px;">
+        <button class="btn btn-danger" onclick="closeZariaTransferModal()" style="flex:1;">✕ إلغاء</button>
+        <button class="btn" id="zs-execute-btn" onclick="executeZSTransfer()" disabled style="flex:2;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;opacity:0.5;">🔄 تنفيذ النقل</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+// فتح مودال نقل دفعة محددة
+function openZSSingleTransferModal(secKey, zid){
+  openZariaTransferModal();
+  setTimeout(() => {
+    document.getElementById('zs-src-sec').value = secKey;
+    onZSSourceChange(() => {
+      setTimeout(() => selectZSBatch(zid), 100);
+    });
+  }, 100);
+}
+
+// تغيير القطاع المصدر
+function onZSSourceChange(callback){
+  const secKey = document.getElementById('zs-src-sec')?.value;
+  const batchesContainer = document.getElementById('zs-src-batches');
+  const targetSelect = document.getElementById('zs-target-sec');
+  
+  if(!secKey || !batchesContainer) return;
+  
+  // تحديث قائمة القطاعات المستهدفة (استبعاد القطاع المصدر)
+  if(targetSelect){
+    targetSelect.innerHTML = '<option value="">-- اختر القطاع المستهدف --</option>' +
+      Object.entries(SECTORS).filter(([k]) => k !== 'zaria2027' && k !== secKey)
+        .map(([k, s]) => `<option value="${k}">${s.icon} ${s.name}</option>`).join('');
+  }
+  
+  // عرض دفعات الزريعة في القطاع المصدر
+  const zariaList = Object.entries(state.sectors[secKey]?.zaria || {}).sort((a,b) => 
+    (b[1].ts || 0) - (a[1].ts || 0)
+  );
+  
+  if(zariaList.length === 0){
+    batchesContainer.innerHTML = '<div class="empty" style="padding:10px;"><p style="font-size:12px;">لا توجد دفعات زريعة في هذا القطاع</p></div>';
+    return;
+  }
+  
+  batchesContainer.innerHTML = zariaList.map(([zid, z]) => `
+    <div class="zaria-item" style="cursor:pointer;margin-bottom:4px;" onclick="selectZSBatch('${zid}')">
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:700;color:#00b4d8;">
+          ${z.fishType ? `<span>${z.fishType}</span> · ` : ''}${(z.qty || 0).toLocaleString('ar-EG')} قطعة
+        </div>
+        <div style="font-size:10px;color:var(--muted);">${fmtDate(z.date)}</div>
+      </div>
+    </div>
+  `).join('');
+  
+  if(callback) callback();
+}
+
+// اختيار دفعة
+function selectZSBatch(zid){
+  const secKey = document.getElementById('zs-src-sec')?.value;
+  if(!secKey || !zid) return;
+  
+  zsTransferState = { sourceSec: secKey, sourceZid: zid };
+  
+  // تحديد الدفعة المختارة بصرياً
+  document.querySelectorAll('#zs-src-batches .zaria-item').forEach(el => {
+    el.style.borderColor = el.onclick.toString().includes(zid) ? '#00b4d8' : 'transparent';
+    el.style.background = el.onclick.toString().includes(zid) ? 'rgba(0,180,216,.15)' : '';
+  });
+  
+  // تحديث حقول الكمية
+  const z = (state.sectors[secKey]?.zaria || {})[zid];
+  if(z){
+    const qtyInput = document.getElementById('zs-transfer-qty');
+    const fullCheck = document.getElementById('zs-full-transfer');
+    if(qtyInput) qtyInput.value = z.qty || 0;
+    
+    // إظهار خطوات التالية
+    document.getElementById('zs-target-step').style.display = 'block';
+    document.getElementById('zs-qty-step').style.display = 'block';
+    
+    updateZSTransferPreview();
+  }
+}
+
+// تحديث معاينة النقل
+function updateZSTransferPreview(){
+  const preview = document.getElementById('zs-transfer-preview');
+  const executeBtn = document.getElementById('zs-execute-btn');
+  const targetSec = document.getElementById('zs-target-sec')?.value;
+  const transferQty = parseInt(document.getElementById('zs-transfer-qty')?.value) || 0;
+  const fullTransfer = document.getElementById('zs-full-transfer')?.checked;
+  
+  if(!zsTransferState.sourceSec || !zsTransferState.sourceZid){
+    preview.innerHTML = '<div class="preview-empty">📋 اختر القطاع المصدر والدفعة</div>';
+    if(executeBtn) executeBtn.disabled = true;
+    return;
+  }
+  
+  const srcSec = SECTORS[zsTransferState.sourceSec];
+  const z = (state.sectors[zsTransferState.sourceSec]?.zaria || {})[zsTransferState.sourceZid];
+  if(!z || !srcSec){
+    preview.innerHTML = '<div class="preview-empty">❌ بيانات غير صحيحة</div>';
+    return;
+  }
+  
+  const qtyToTransfer = fullTransfer ? (z.qty || 0) : transferQty;
+  const targetSecName = targetSec ? (SECTORS[targetSec]?.name || targetSec) : '---';
+  
+  preview.innerHTML = `
+    <div style="font-size:12px;line-height:1.8;">
+      <div style="margin-bottom:8px;"><b>المصدر:</b> ${srcSec.icon} ${srcSec.name}</div>
+      <div style="margin-bottom:8px;"><b>الدفعة:</b> ${z.fishType || '—'} · ${(z.qty || 0).toLocaleString('ar-EG')} قطعة</div>
+      <div style="margin-bottom:8px;"><b>المستهدف:</b> ${targetSecName}</div>
+      <div style="margin-bottom:8px;"><b>الكمية المنقولة:</b> <span style="color:#00b4d8;font-weight:700;">${qtyToTransfer.toLocaleString('ar-EG')} قطعة</span></div>
+      ${z.price > 0 ? `<div style="margin-bottom:8px;"><b>التكلفة المنقولة:</b> <span style="color:#ff6b6b;font-weight:700;">${fmtCost(qtyToTransfer * z.price)}</span></div>` : ''}
+    </div>
+  `;
+  
+  // تفعيل زر التنفيذ
+  if(executeBtn){
+    executeBtn.disabled = !targetSec || qtyToTransfer <= 0;
+    executeBtn.style.opacity = (!targetSec || qtyToTransfer <= 0) ? '0.5' : '1';
+  }
+}
+
+// تنفيذ النقل
+async function executeZSTransfer(){
+  const targetSec = document.getElementById('zs-target-sec')?.value;
+  const transferQty = parseInt(document.getElementById('zs-transfer-qty')?.value) || 0;
+  const fullTransfer = document.getElementById('zs-full-transfer')?.checked;
+  
+  if(!zsTransferState.sourceSec || !zsTransferState.sourceZid){
+    alert('اختر القطاع المصدر والدفعة أولاً');
+    return;
+  }
+  
+  if(!targetSec){
+    alert('اختر القطاع المستهدف');
+    return;
+  }
+  
+  const srcSec = zsTransferState.sourceSec;
+  const srcZid = zsTransferState.sourceZid;
+  const z = (state.sectors[srcSec]?.zaria || {})[srcZid];
+  
+  if(!z){
+    alert('الدفعة المختارة غير موجودة');
+    return;
+  }
+  
+  const qtyToTransfer = fullTransfer ? (z.qty || 0) : transferQty;
+  
+  if(qtyToTransfer <= 0 || qtyToTransfer > (z.qty || 0)){
+    alert('الكمية غير صحيحة');
+    return;
+  }
+  
+  if(!confirm(`هل أنت متأكد من نقل ${qtyToTransfer.toLocaleString('ar-ED')} قطعة من ${SECTORS[srcSec].name} إلى ${SECTORS[targetSec].name}?`)){
+    return;
+  }
+  
+  try{
+    // إنشاء دفعة جديدة في القطاع المستهدف
+    const newZariaData = {
+      fishType: z.fishType,
+      qty: qtyToTransfer,
+      price: z.price,
+      date: new Date().toISOString().split('T')[0],
+      notes: `منقول من ${SECTORS[srcSec].name}${z.notes ? ' - ' + z.notes : ''}`,
+      transferredFrom: srcSec,
+      transferredFromBatch: srcZid,
+      ts: Date.now()
+    };
+    
+    await window.dbPush(window.dbRef(db, 'sectors/' + targetSec + '/zaria'), newZariaData);
+    
+    // تحديث أو حذف الدفعة المصدرية
+    if(fullTransfer){
+      // حذف الدفعة بالكامل
+      await window.dbRemove(window.dbRef(db, 'sectors/' + srcSec + '/zaria/' + srcZid));
+    } else {
+      // تقليل الكمية
+      const remainingQty = (z.qty || 0) - qtyToTransfer;
+      await window.dbUpdate(window.dbRef(db, 'sectors/' + srcSec + '/zaria/' + srcZid), { qty: remainingQty });
+    }
+    
+    // تسجيل عملية النقل
+    await window.dbPush(window.dbRef(db, 'logs'), {
+      type: 'zaria_transfer',
+      fromSector: srcSec,
+      toSector: targetSec,
+      details: `نقل ${qtyToTransfer.toLocaleString('ar-EG')} قطعة من ${SECTORS[srcSec].name} إلى ${SECTORS[targetSec].name}`,
+      qty: qtyToTransfer,
+      cost: qtyToTransfer * (z.price || 0),
+      date: new Date().toISOString().split('T')[0],
+      ts: Date.now()
+    });
+    
+    toast(`✅ تم نقل ${qtyToTransfer.toLocaleString('ar-EG')} قطعة بنجاح`, 'ok');
+    closeZariaTransferModal();
+    renderZariaSectorsPage();
+    renderZariaPage();
+    renderDashboard();
+    
+  } catch(error){
+    console.error('خطأ في النقل:', error);
+    alert('حدث خطأ أثناء تنفيذ العملية');
+  }
+}
+
+// إغلاق مودال النقل
+function closeZariaTransferModal(){
+  const modal = document.getElementById('zs-transfer-modal');
+  if(modal) modal.remove();
+  zsTransferState = { sourceSec: null, sourceZid: null };
+}
+
+// تصدير تقرير زريعة القطاعات PDF
+function exportZariaSectorsPDF(){
+  const sectorsToShow = Object.entries(SECTORS).filter(([k]) => k !== 'zaria2027');
+  let allData = [];
+  
+  sectorsToShow.forEach(([k, sec]) => {
+    const data = state.sectors[k] || {};
+    const zariaList = Object.values(data.zaria || {});
+    const feedList = Object.values(data.zariaFeed || {});
+    const expList = Object.values(data.zariaExpenses || {});
+    
+    if(zariaList.length > 0 || feedList.length > 0 || expList.length > 0){
+      allData.push({
+        sector: sec.name,
+        zaria: zariaList,
+        feed: feedList,
+        expenses: expList
+      });
+    }
+  });
+  
+  if(allData.length === 0){
+    alert('لا توجد بيانات للتصدير');
+    return;
+  }
+  
+  // إنشاء HTML للتقرير
+  let html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+      <meta charset="UTF-8">
+      <title>تقرير زريعة القطاعات</title>
+      <style>
+        body { font-family: 'Cairo', sans-serif; padding: 20px; direction: rtl; }
+        h1 { color: #00b4d8; text-align: center; border-bottom: 2px solid #00b4d8; padding-bottom: 10px; }
+        h2 { color: #333; margin-top: 30px; background: #f5f5f5; padding: 10px; border-right: 4px solid #00b4d8; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: right; font-size: 12px; }
+        th { background: #00b4d8; color: white; }
+        .total { background: #f0f0f0; font-weight: bold; }
+        .summary { display: flex; gap: 20px; flex-wrap: wrap; margin: 20px 0; }
+        .summary-card { flex: 1; min-width: 150px; background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; }
+        .summary-value { font-size: 24px; font-weight: bold; color: #00b4d8; }
+        .summary-label { font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <h1>🐟 تقرير زريعة القطاعات الشامل</h1>
+      <p style="text-align:center;color:#666;">${new Date().toLocaleDateString('ar-EG')}</p>
+      
+      <div class="summary">
+        <div class="summary-card"><div class="summary-value" id="r-total-qty">0</div><div class="summary-label">إجمالي الزريعة</div></div>
+        <div class="summary-card"><div class="summary-value" id="r-total-cost">0</div><div class="summary-label">تكلفة الزريعة</div></div>
+        <div class="summary-card"><div class="summary-value" id="r-feed-kg">0</div><div class="summary-label">علف الزريعة</div></div>
+        <div class="summary-card"><div class="summary-value" id="r-expenses">0</div><div class="summary-label">المصاريف</div></div>
+      </div>
+  `;
+  
+  let gQty = 0, gCost = 0, gFeedKg = 0, gFeedCost = 0, gExp = 0;
+  
+  allData.forEach(({sector, zaria, feed, expenses}) => {
+    html += `<h2>${sector}</h2>`;
+    
+    if(zaria.length > 0){
+      html += `<h3 style="color:#00b4d8;font-size:14px;">📋 دفعات الزريعة</h3><table>
+        <tr><th>نوع السمك</th><th>العدد</th><th>السعر</th><th>الإجمالي</th><th>التاريخ</th></tr>`;
+      zaria.forEach(z => {
+        const total = (z.qty || 0) * (z.price || 0);
+        gQty += (z.qty || 0);
+        gCost += total;
+        html += `<tr><td>${z.fishType || '—'}</td><td>${(z.qty||0).toLocaleString('ar-EG')}</td><td>${fmtCost(z.price)}</td><td>${fmtCost(total)}</td><td>${fmtDate(z.date)}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+    
+    if(feed.length > 0){
+      html += `<h3 style="color:var(--feed-cost-color);font-size:14px;">🌿 علف الزريعة</h3><table>
+        <tr><th>نوع العلف</th><th>الكمية (كجم)</th><th>التكلفة</th><th>التاريخ</th></tr>`;
+      feed.forEach(f => {
+        gFeedKg += (f.weight || 0);
+        gFeedCost += (f.cost || 0);
+        html += `<tr><td>علف ${f.feedType || '?'}%</td><td>${(f.weight||0).toLocaleString('ar-EG')}</td><td>${fmtCost(f.cost)}</td><td>${fmtDate(f.date)}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+    
+    if(expenses.length > 0){
+      html += `<h3 style="color:#e74c3c;font-size:14px;">💸 المصاريف</h3><table>
+        <tr><th>البند</th><th>المبلغ</th><th>التاريخ</th></tr>`;
+      expenses.forEach(e => {
+        gExp += (e.amount || 0);
+        html += `<tr><td>${e.name}</td><td>${fmtCost(e.amount)}</td><td>${fmtDate(e.date)}</td></tr>`;
+      });
+      html += `</table>`;
+    }
+  });
+  
+  html += `
+      <div class="summary" style="margin-top:30px;border-top:2px solid #00b4d8;padding-top:20px;">
+        <div class="summary-card"><div class="summary-value">${gQty.toLocaleString('ar-EG')}</div><div class="summary-label">إجمالي الزريعة (قطعة)</div></div>
+        <div class="summary-card"><div class="summary-value">${fmtCost(gCost)}</div><div class="summary-label">إجمالي تكلفة الزريعة</div></div>
+        <div class="summary-card"><div class="summary-value">${gFeedKg.toLocaleString('ar-EG')} كجم</div><div class="summary-label">إجمالي العلف</div></div>
+        <div class="summary-card"><div class="summary-value">${fmtCost(gExp)}</div><div class="summary-label">إجمالي المصاريف</div></div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.print();
+}
 // حساب إجمالي سعر الزريعة 2027
 function calcZaria2027Total(){
   const qty = parseFloat(document.getElementById('z2027-qty').value) || 0;
@@ -5553,13 +6484,11 @@ function renderSectors(){
           </div>
         </div>
 
-        <div class="zaria-card">
-          <div style="font-size:12px;font-weight:700;color:var(--cyan);margin-bottom:8px;">🐟 الزريعة وتغذيتها (منفصلة كلياً)</div>
-          ${renderZaria(k)}
-          <button class="btn btn-zaria btn" style="margin-top:8px;" onclick="toggleZariaForm('${k}')">🐟 إضافة زريعة بالعدد</button>
-          <button class="btn btn-gold btn" style="margin-top:6px; background:linear-gradient(135deg,#c97d20,var(--feed-cost-color)); color:var(--deep);" onclick="toggleZariaFeedForm('${k}')">🍽️ إضافة علف منفصل للزريعة (كجم)</button>
-          <button class="btn btn-sm" style="margin-top:6px;width:100%;background:linear-gradient(135deg,#922b21,#e74c3c);color:#fff;" onclick="toggleZariaExpenseForm('${k}')">💸 إضافة مصروف للزريعة</button>
-          ${renderZariaCostSummary(k)}
+        <!-- رابط سريع لقسم زريعة هذا القطاع -->
+        <div style="background:linear-gradient(135deg,rgba(0,180,216,.08),rgba(6,214,160,.05));border:1px solid rgba(0,180,216,.2);border-radius:10px;padding:10px;margin-top:9px;text-align:center;">
+          <button class="btn" onclick="showPage('zaria-sectors')" style="width:100%;background:linear-gradient(135deg,#00b4d8,#06d6a0);color:#fff;border:none;font-weight:700;">
+            🐟 إدارة زريعة ${sec.name} ← اضغط هنا للذهاب لقسم الزريعة المنفصل
+          </button>
         </div>
 
         <div style="display:flex; gap:7px; margin-top:7px;">
