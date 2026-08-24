@@ -2677,7 +2677,6 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
       <button class="nb" onclick="showPage('sectors')">🌊 القطاعات</button>
       <button class="nb" onclick="showPage('store')">🏭 المخزن</button>
       <button class="nb" onclick="showPage('feed')">🍽️ التغذية</button>
-      <button class="nb" onclick="showPage('zaria')">🐟 الزريعة</button>
       <button class="nb" onclick="showPage('zaria-sectors')" style="background:linear-gradient(135deg,#00b4d8,#06d6a0);">🐟 زريعة القطاعات</button>
       <button class="nb" onclick="showPage('logs')">📋 السجل</button>
       <button class="nb" onclick="showPage('movements')">🔄 الحركات</button>
@@ -3051,6 +3050,10 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
           <option value="fish_in">إضافة سمك</option>
           <option value="fish_out">🐠 بيع / تصريف سمك</option>
           <option value="store_in">استلام علف</option>
+          <option value="zaria_in">🐣 إدخال زريعة</option>
+          <option value="zaria_feed">🌿 علف زريعة</option>
+          <option value="zaria_expense">💰 مصروفات زريعة</option>
+          <option value="zaria_transfer">🔄 نقل زريعة</option>
         </select>
         <select class="fc" id="lg-sec" onchange="renderLogs()" style="flex:1;"></select>
       </div>
@@ -3363,9 +3366,6 @@ body.viewer-mode #pg-feed-readonly{display:block!important;}
     </button>
     <button class="nav-item" data-page="feed" onclick="showPage('feed')">
       <span class="nav-icon">🍽️</span><span class="nav-label">التغذية</span>
-    </button>
-    <button class="nav-item" data-page="zaria" onclick="showPage('zaria')">
-      <span class="nav-icon">🐟</span><span class="nav-label">الزريعة</span>
     </button>
     <button class="nav-item" data-page="zaria2027" onclick="showPage('zaria2027')" style="background:linear-gradient(135deg,#ff6b6b33,#ff6b6b22);">
       <span class="nav-icon">🐣</span><span class="nav-label">زريعة 2027</span>
@@ -3922,8 +3922,17 @@ function sectorZariaFeedLogCost(secKey){
   return Object.values(state.logs||{}).filter(l=> l && l.type==='feed_out' && l.sector===secKey && (l.notes||'').indexOf('علف زريعة')>-1 && (l.feedCost||0)>0).reduce((s,l)=>s+(l.feedCost||0),0);
 }
 function sectorZariaExpenseCost(secKey){
-  const exp = (state.sectors[secKey]||{}).zariaExpenses || {};
-  return Object.values(exp).reduce((s,e)=> s+(e.amount||0), 0);
+  // ✅ حساب كل مصاريف الزريعة من zariaExpenses
+  const zariaExp = (state.sectors[secKey]||{}).zariaExpenses || {};
+  const zariaExpTotal = Object.values(zariaExp).reduce((s,e)=> s+(e.amount||0), 0);
+  
+  // ✅ إضافة مصاريف extras التي تحتوي على "زريعة" (للتوافق مع البيانات القديمة)
+  const extras = (state.sectors[secKey]||{}).extras || {};
+  const extrasZariaTotal = Object.values(extras).filter(e => 
+    (e.name||'').includes('زريعة') || (e.notes||'').includes('زريعة')
+  ).reduce((s,e)=> s+(e.amount||0), 0);
+  
+  return zariaExpTotal + extrasZariaTotal;
 }
 function toggleZariaExpenseForm(k){
   var f = document.getElementById('zaria-exp-form-'+k);
@@ -4442,7 +4451,9 @@ function init(){
 }
 
 function showPage(p){
-  if(p==='zaria') renderZariaPage();
+  // ✅ تحويل تلقائي: قسم "الزريعة" القديم → "زريعة القطاعات"
+  if(p === 'zaria') p = 'zaria-sectors';
+  
   if(p==='zaria2027') renderZaria2027Page();
   if(p==='zaria-sectors') renderZariaSectorsPage();
   if(p==='transfers'){ loadTransfersData(); populateTransferFilters(); }
@@ -4455,7 +4466,7 @@ function showPage(p){
     const el=document.getElementById('pg-'+p); if(el) el.classList.add('active');
   }
   if(p==='movements'){initMovementsFilters();renderMovements();}
-  const idx=['dashboard','sectors','store','feed','zaria','zaria-sectors','zaria2027','logs','movements','transfers'].indexOf(p);
+  const idx=['dashboard','sectors','store','feed','zaria-sectors','zaria2027','logs','movements','transfers'].indexOf(p);
   if(idx>=0) document.querySelectorAll('.nb')[idx].classList.add('active');
   // Sync new bottom-nav active state
   const bnItem = document.querySelector('.bottom-nav .nav-item[data-page="'+p+'"]');
@@ -4543,9 +4554,17 @@ function renderDashboard(){
   // ✅ شيب تكلفة الزريعة المنفصلة (سعر الزريعة + علف الزريعة)
   const totalZariaC = Object.keys(SECTORS).reduce((s,k)=>s+sectorZariaCost(k),0);
   const totalZariaFC = Object.keys(SECTORS).reduce((s,k)=>s+(sectorZariaFeedCost(k)||sectorZariaFeedLogCost(k)),0);
-  const totalZariaAll = totalZariaC + totalZariaFC;
+  // ✅ حساب مصاريف الزريعة الإجمالية (من كل القطاعات + زريعة 2027)
+  const totalZariaEC = Object.keys(SECTORS).reduce((s,k)=>s+sectorZariaExpenseCost(k),0);
+  // إضافة مصاريف زريعة 2027
+  const z2027Exp = Object.values((state.sectors['zaria2027']||{}).zariaExpenses||{}).reduce((s,e)=>s+(e.amount||0),0);
+  const grandTotalZariaExp = totalZariaEC + z2027Exp;
+  const totalZariaAll = totalZariaC + totalZariaFC + grandTotalZariaExp;
   const zariaEl = document.getElementById('d-zariacost');
   if(zariaEl) zariaEl.textContent = totalZariaAll>0 ? (totalZariaAll>=1000000?(totalZariaAll/1000000).toFixed(2)+' م': totalZariaAll>=1000?(totalZariaAll/1000).toFixed(1)+' ك': totalZariaAll.toFixed(0))+' ج.م' : '—';
+  // ✅ تحديث مصاريف الزريعة في البطاقة الرئيسية
+  const zsExpEl = document.getElementById('zs-expenses');
+  if(zsExpEl) zsExpEl.textContent = grandTotalZariaExp > 0 ? fmtCost(grandTotalZariaExp) : '—';
   const harvestEl = document.getElementById('d-harvest');
   if(harvestEl) harvestEl.textContent = harvestRev>0 ? (harvestRev>=1000000?(harvestRev/1000000).toFixed(2)+' م':harvestRev>=1000?(harvestRev/1000).toFixed(1)+' ك':harvestRev.toFixed(0))+' ج.م' : '—';
   const pnlEl = document.getElementById('d-pnl'); const pnlChip = document.getElementById('d-pnl-chip');
@@ -5714,10 +5733,23 @@ async function addZSExpense(secKey){
   
   await window.dbPush(window.dbRef(db, 'sectors/' + secKey + '/zariaExpenses'), expData);
 
-  toast('✅تم إضافة المصروف', 'ok');
+  // ✅ تسجيل في السجل الشامل
+  await window.dbPush(window.dbRef(db, 'logs'), {
+    type: 'zaria_expense',
+    sector: secKey,
+    name,
+    amount,
+    date,
+    time: new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    ts: Date.now(),
+    notes
+  });
+
+  toast(`✅تم إضافة المصروف (${fmtCost(amount)})`, 'ok');
   toggleZSSectorExpenseForm(secKey);
   renderZariaSectorsPage();
   renderZariaPage();
+  renderDashboard();
 }
 
 // حذف مصروف زريعة
@@ -6422,12 +6454,25 @@ async function addZaria2027Expense(){
     name, amount, date, ts: Date.now()
   });
 
+  // ✅ تسجيل في السجل الشامل
+  await window.dbPush(window.dbRef(db, 'logs'), {
+    type: 'zaria_expense',
+    sector: 'zaria2027',
+    name,
+    amount,
+    date,
+    time: new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    ts: Date.now(),
+    notes: 'زريعة 2027'
+  });
+
   // مسح الحقول
   document.getElementById('z2027-exp-name').value = '';
   document.getElementById('z2027-exp-amount').value = '';
 
-  alert('✅ تم إضافة المصروف بنجاح');
+  toast(`✅ تم إضافة المصروف (${fmtCost(amount)})`, 'ok');
   renderZaria2027Page();
+  renderDashboard();
 }
 
 // حذف مصروف زريعة 2027
@@ -6761,7 +6806,8 @@ function renderStoreLogs(){
 
 function logHTML(log, withAct){
   if(!log) return '';
-  const icons={feed_out:'🍽️',fish_in:'🐟',store_in:'📦',fish_out:'🐠'}; const cls={feed_out:'fo',fish_in:'fi',store_in:'si2',fish_out:'fout'};
+  const icons={feed_out:'🍽️',fish_in:'🐟',store_in:'📦',fish_out:'🐠',zaria_in:'🐣',zaria_feed:'🌿',zaria_expense:'💰',zaria_transfer:'🔄'}; 
+  const cls={feed_out:'fo',fish_in:'fi',store_in:'si2',fish_out:'fout',zaria_in:'zi',zaria_feed:'zf',zaria_expense:'ze',zaria_transfer:'zt'};
   const sname=log.sector?(SECTORS[log.sector]?.name||log.sector):'المخزن';
   let title='',detail='';
   if(log.type==='feed_out'){
@@ -6785,6 +6831,26 @@ function logHTML(log, withAct){
     if(log.totalRevenue>0) detail+=` | <b style="color:var(--harvest-color);">الإيراد: ${fmtCost(log.totalRevenue)}</b>`;
     const p = sectorPnL(log.sector||'');
     if(p.totalCost>0 && p.revenue>0){ const netIcon = p.net>0?'📈':'📉'; const netColor= p.net>=0?'var(--profit-color)':'var(--loss-color)'; detail+=` | ${netIcon} <b style="color:${netColor};">${fmtCost(Math.abs(p.net))}</b>`; }
+    if(log.notes) detail+=` | ${log.notes}`;
+  } else if(log.type==='zaria_in'){
+    title=`🐣 إدخال زريعة ${log.fishType||''} → ${sname}`;
+    detail=`العدد: <b style="color:var(--cyan)">${(log.qty||0).toLocaleString('ar-EG')} قطعة</b>`;
+    if(log.totalCost>0) detail+=` | التكلفة: <b style="color:var(--cost-color);">${fmtCost(log.totalCost)}</b>`;
+    if(log.notes) detail+=` | 📝 <span style="color:var(--muted);">${log.notes}</span>`;
+  } else if(log.type==='zaria_feed'){
+    title=`🌿 علف زريعة ${log.feedType||''}% ${log.float==='float'?'🌊 عايم':'⬇️ غاطس'} → ${sname}`;
+    detail=`الكمية: <b style="color:var(--gold)">${log.details||log.weight+' كجم'}</b>`;
+    if(log.cost>0) detail+=` | التكلفة: <b style="color:var(--feed-cost-color);">${fmtCost(log.cost)}</b>`;
+    if(log.stockBefore) detail+=` | الرصيد قبل: <b style="color:#fff3cd;">${log.stockBefore}</b>`;
+    if(log.stockAfter) detail+=` | الرصيد بعد: <b style="color:#d1e7dd;">${log.stockAfter}</b>`;
+    if(log.notes) detail+=` | ${log.notes}`;
+  } else if(log.type==='zaria_expense'){
+    title=`💰 مصروف زريعة (${log.name||''}) ← ${sname}`;
+    detail=`المبلغ: <b style="color:var(--cost-color);">${fmtCost(log.amount||0)}</b>`;
+    if(log.notes) detail+=` | 📝 <span style="color:var(--muted);">${log.notes}</span>`;
+  } else if(log.type==='zaria_transfer'){
+    title='🔄 نقل زريعة من ' + (SECTORS[log.fromSector]?.name||log.fromSector||'—') + ' إلى ' + (SECTORS[log.toSector]?.name||log.toSector||'—');
+    detail=`العدد: <b style="color:var(--cyan)">${(log.qty||0).toLocaleString('ar-EG')} قطعة</b>`;
     if(log.notes) detail+=` | ${log.notes}`;
   }
   
