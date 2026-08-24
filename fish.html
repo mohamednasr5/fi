@@ -5267,48 +5267,77 @@ function renderZSSectorZariaForm(secKey){
   `;
 }
 
-// نموذج إضافة علف لزريعة قطاع
+// 🔄 حالة وحدة العلف لزريعة القطاع
+const zsFeedUnitState = {};
+
+// نموذج إضافة علف لزريعة قطاع (محسّن مع دعم الوحدات والسحب التلقائي)
 function renderZSSectorFeedForm(secKey){
   const sec = SECTORS[secKey];
   if(!sec) return '';
+  const today = new Date().toISOString().split('T')[0];
   
   return `
     <div class="card" style="background:rgba(244,162,97,.08);border:1px solid rgba(244,162,97,.3);">
-      <div class="card-ttl" style="color:var(--feed-cost-color);">🍽️ إضافة علف زريعة — ${sec.name}</div>
+      <div class="card-ttl" style="color:var(--feed-cost-color);">🍽️ إضافة علف للزريعة (يُخصم تلقائياً من المخزن) — ${sec.name}</div>
+      
       <div class="fg">
-        <label class="fl">نوع العلف</label>
-        <select class="fc" id="zs-feed-type-${secKey}" onchange="updateZSStockInfo('${secKey}')">
+        <label class="fl">🌾 نوع العلف *</label>
+        <select class="fc" id="zs-feed-type-${secKey}" onchange="updateZSStockInfo('${secKey}');zsCalcPreview('${secKey}')">
           <option value="30">علف 30%</option>
           <option value="18">علف 18%</option>
           <option value="25">علف 25%</option>
         </select>
       </div>
+      
       <div class="fg">
-        <label class="fl">نوع الطفو</label>
+        <label class="fl">🌊 نوع الطفو *</label>
         <div class="tg">
-          <button class="tb active" id="zs-flt-float-${secKey}" onclick="zsFloat('${secKey}','float')">🌊 عايم</button>
-          <button class="tb" id="zs-flt-sink-${secKey}" onclick="zsFloat('${secKey}','sink')">⬇️ غاطس</button>
+          <button class="tb active" id="zs-flt-float-${secKey}" onclick="zsFloat('${secKey}','float');updateZSStockInfo('${secKey}');zsCalcPreview('${secKey}')">🌊 عايم</button>
+          <button class="tb" id="zs-flt-sink-${secKey}" onclick="zsFloat('${secKey}','sink');updateZSStockInfo('${secKey}');zsCalcPreview('${secKey}')">⬇️ غاطس</button>
         </div>
       </div>
-      <div id="zs-stock-info-${secKey}" class="ibox" style="margin-bottom:10px;">اختر نوع العلف لعرض المتاح</div>
+      
+      <div id="zs-stock-info-${secKey}" class="ibox" style="margin-bottom:10px;background:rgba(0,229,255,.07);border-radius:7px;padding:8px;">اختر نوع العلف لعرض المتاح بالمخزن</div>
+      
       <div class="fg">
-        <label class="fl">الكمية (كجم)</label>
-        <input type="number" class="fc" id="zs-feed-qty-${secKey}" placeholder="أدخل الكمية بالكيلو" min="0" step="0.01">
+        <label class="fl">📦 وحدة الكمية *</label>
+        <div style="display:flex;gap:5px;margin-bottom:6px;">
+          <button id="zs-u-kg-${secKey}"   class="btn active" style="flex:1;font-size:10px;padding:6px;" onclick="zsSetFeedUnit('${secKey}','kg')">🔢 كيلو جرام</button>
+          <button id="zs-u-b25-${secKey}" class="btn"        style="flex:1;font-size:10px;padding:6px;" onclick="zsSetFeedUnit('${secKey}','bag25')">🛍️ شيكارة 25كجم</button>
+          <button id="zs-u-ton-${secKey}" class="btn"        style="flex:1;font-size:10px;padding:6px;" onclick="zsSetFeedUnit('${secKey}','ton')">⚖️ طن</button>
+        </div>
+        <label id="zs-qty-lbl-${secKey}" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">الكمية (كيلو جرام) *</label>
+        <input type="number" class="fc" id="zs-feed-qty-${secKey}" placeholder="أدخل الكمية" min="0" step="0.001" oninput="zsCalcPreview('${secKey}')">
       </div>
+      
+      <div id="zs-calc-preview-${secKey}" class="ibox" style="margin-bottom:10px;display:none;background:rgba(255,209,102,.07);border-radius:7px;padding:8px;"></div>
+      
       <div class="fg">
-        <label class="fl" style="color:var(--feed-cost-color);">💵 سعر الكيلو (اختياري)</label>
-        <input type="number" class="fc" id="zs-feed-price-${secKey}" placeholder="0.00" min="0" step="0.01">
+        <label class="fl">💰 السعر (اختياري)</label>
+        <div style="display:flex;gap:5px;margin-bottom:6px;">
+          <button id="zs-pmode-unit-${secKey}" class="btn active" style="flex:1;font-size:10px;padding:5px;" onclick="zsSetPriceMode('${secKey}','unit')">💰 سعر الوحدة</button>
+          <button id="zs-pmode-total-${secKey}" class="btn"        style="flex:1;font-size:10px;padding:5px;" onclick="zsSetPriceMode('${secKey}','total')">🧾 السعر الإجمالي</button>
+        </div>
+        <label id="zs-price-lbl-${secKey}" style="display:block;font-size:11px;color:var(--muted);margin-bottom:4px;">سعر الكيلو (ج.م)</label>
+        <div style="position:relative;">
+          <input type="number" class="fc" id="zs-feed-price-${secKey}" placeholder="0.00" min="0" step="0.01" oninput="zsCalcPreview('${secKey}')" style="border-color:var(--feed-cost-color);padding-left:45px;">
+          <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:var(--feed-cost-color);pointer-events:none;">ج.م</span>
+        </div>
+        <div id="zs-price-preview-${secKey}" style="font-size:11px;color:var(--feed-cost-color);margin-top:4px;min-height:16px;"></div>
       </div>
+      
       <div class="fg">
-        <label class="fl">التاريخ</label>
-        <input type="date" class="fc" id="zs-feed-date-${secKey}">
+        <label class="fl">📅 تاريخ الإضافة *</label>
+        <input type="date" class="fc" id="zs-feed-date-${secKey}" value="${today}">
       </div>
+      
       <div class="fg">
-        <label class="fl">ملاحظات</label>
-        <input type="text" class="fc" id="zs-feed-notes-${secKey}" placeholder="ملاحظات إضافية">
+        <label class="fl">📝 ملاحظات (اختياري)</label>
+        <input type="text" class="fc" id="zs-feed-notes-${secKey}" placeholder="ملاحظات إضافية...">
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn" onclick="addZSFeed('${secKey}')" style="flex:1;background:linear-gradient(135deg,#c97d20,var(--feed-cost-color));color:var(--deep);">💾 حفظ العلف</button>
+      
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-gold" onclick="addZSFeed('${secKey}')" style="flex:1;">✅ حفظ وخصم من المخزن</button>
         <button class="btn btn-danger" onclick="toggleZSSectorFeedForm('${secKey}')" style="flex:0;">✕</button>
       </div>
     </div>
@@ -5357,7 +5386,89 @@ function toggleZSSectorForm(secKey){
 function toggleZSSectorFeedForm(secKey){
   const formEl = document.getElementById('zs-feed-form-' + secKey);
   if(formEl) formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
-  if(formEl.style.display === 'block') updateZSStockInfo(secKey);
+  if(formEl.style.display === 'block') {
+    updateZSStockInfo(secKey);
+    zsCalcPreview(secKey);
+  }
+}
+
+// ✅ تعيين وحدة العلف لزريعة القطاع
+function zsSetFeedUnit(secKey, unit){
+  zsFeedUnitState[secKey] = unit;
+  const btns = ['kg', 'b25', 'ton'].map(u => document.getElementById('zs-u-' + u + '-' + secKey));
+  btns.forEach(b => { if(b) b.classList.remove('active'); });
+  const activeBtn = document.getElementById('zs-u-' + (unit === 'bag25' ? 'b25' : unit === 'kg' ? 'kg' : 'ton') + '-' + secKey);
+  if(activeBtn) activeBtn.classList.add('active');
+  
+  // تحديث التسمية والـ placeholder
+  const lbl = document.getElementById('zs-qty-lbl-' + secKey);
+  const input = document.getElementById('zs-feed-qty-' + secKey);
+  if(unit === 'kg'){ 
+    if(lbl) lbl.textContent = 'الكمية (كيلو جرام) *'; 
+    if(input){ input.step = '0.01'; input.placeholder = 'مثال: 50'; } 
+  } else if(unit === 'bag25'){ 
+    if(lbl) lbl.textContent = 'العدد (شيكارة 25 كجم) *'; 
+    if(input){ input.step = '1'; input.placeholder = 'مثال: 2'; } 
+  } else if(unit === 'ton'){ 
+    if(lbl) lbl.textContent = 'الكمية بالطن *'; 
+    if(input){ input.step = '0.001'; input.placeholder = 'مثال: 0.5'; } 
+  }
+  zsCalcPreview(secKey);
+}
+
+// ✅ وضع السعر (وحدة / إجمالي)
+const zsPriceModeState = {};
+function zsSetPriceMode(secKey, mode){
+  zsPriceModeState[secKey] = mode;
+  const btnUnit = document.getElementById('zs-pmode-unit-' + secKey);
+  const btnTotal = document.getElementById('zs-pmode-total-' + secKey);
+  if(btnUnit) btnUnit.classList.toggle('active', mode === 'unit');
+  if(btnTotal) btnTotal.classList.toggle('active', mode === 'total');
+  
+  const unit = zsFeedUnitState[secKey] || 'kg';
+  const lbl = document.getElementById('zs-price-lbl-' + secKey);
+  if(mode === 'unit'){
+    if(lbl) lbl.textContent = unit === 'bag25' ? 'سعر الشيكارة 25 كجم (ج.م)' : unit === 'ton' ? 'سعر الطن (ج.م)' : 'سعر الكيلو (ج.م)';
+  } else {
+    if(lbl) lbl.textContent = 'السعر الإجمالي (ج.م)';
+  }
+  zsCalcPreview(secKey);
+}
+
+// ✅ حساب المعاينة المباشرة
+function zsCalcPreview(secKey){
+  const unit = zsFeedUnitState[secKey] || 'kg';
+  const val = parseFloat(document.getElementById('zs-feed-qty-' + secKey)?.value) || 0;
+  const price = parseFloat(document.getElementById('zs-feed-price-' + secKey)?.value) || 0;
+  const priceMode = zsPriceModeState[secKey] || 'unit';
+  const previewEl = document.getElementById('zs-calc-preview-' + secKey);
+  const pricePreviewEl = document.getElementById('zs-price-preview-' + secKey);
+  
+  // تحويل القيمة إلى كيلو
+  let kg = 0;
+  if(unit === 'kg') kg = val;
+  else if(unit === 'bag25') kg = val * 25;
+  else if(unit === 'ton') kg = val * 1000;
+  
+  // عرض المعاينة
+  if(previewEl && val > 0){
+    const unitLabel = unit === 'bag25' ? `${val} شيكارة 25كجم` : unit === 'ton' ? `${val} طن` : `${val} كجم`;
+    previewEl.style.display = 'block';
+    previewEl.innerHTML = `⚖️ الإجمالي: <b style="color:var(--cyan)">${kg.toLocaleString('ar-EG')} كجم</b> = <b>${(kg/1000).toFixed(3)}</b> طن`;
+  } else if(previewEl) {
+    previewEl.style.display = 'none';
+  }
+  
+  // عرض معاينة السعر
+  if(pricePreviewEl && price > 0 && kg > 0){
+    let totalCost = 0;
+    if(priceMode === 'unit'){
+      totalCost = unit === 'bag25' ? (val * price) : unit === 'ton' ? (val * price) : (kg * price);
+    } else {
+      totalCost = price;
+    }
+    pricePreviewEl.innerHTML = `💵 التكلفة التقديرية: <b>${totalCost.toLocaleString('ar-EG')} ج.م</b>`;
+  }
 }
 
 // تبديل عرض نموذج المصاريف
@@ -5378,7 +5489,7 @@ function zsFloat(secKey, v){
   updateZSStockInfo(secKey);
 }
 
-// تحديث معلومات المخزن
+// تحديث معلومات المخزن (مع التحقق من الرصيد)
 function updateZSStockInfo(secKey){
   const type = document.getElementById('zs-feed-type-' + secKey)?.value;
   const float = zsFloatState[secKey] || 'float';
@@ -5386,7 +5497,31 @@ function updateZSStockInfo(secKey){
   if(!el || !type) return;
   const s = getStock(type, float);
   const kg = stockToKg(s);
-  el.innerHTML = `📦 متاح بالمخزن (${type}% ${float==='float'?'🌊 عايم':'⬇️ غاطس'}): ${fmtStock(s)}<br><span style="font-size:10px;">${(kg/1000).toFixed(3)} طن — ${kg.toLocaleString('ar-EG')} كجم</span>`;
+  const unit = zsFeedUnitState[secKey] || 'kg';
+  const val = parseFloat(document.getElementById('zs-feed-qty-' + secKey)?.value) || 0;
+  
+  // حساب ما يطلبه المستخدم بالكيلو
+  let reqKg = 0;
+  if(unit === 'kg') reqKg = val;
+  else if(unit === 'bag25') reqKg = val * 25;
+  else if(unit === 'ton') reqKg = val * 1000;
+  
+  const isEnough = kg >= reqKg;
+  const statusColor = isEnough ? '#00b894' : '#e74c3c';
+  const statusIcon = isEnough ? '✅' : '❌';
+  
+  el.innerHTML = `
+    <div style="font-size:11px;color:var(--cyan);">
+      📦 متاح بالمخزن (${type}% ${float==='float'?'🌊 عايم':'⬇️ غاطس'}): 
+      <b style="color:#fff;">${fmtStock(s)}</b>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px;">
+      ${(kg/1000).toFixed(3)} طن — ${kg.toLocaleString('ar-EG')} كجم
+    </div>
+    ${val > 0 ? `<div style="font-size:10px;margin-top:6px;padding:6px;border-radius:6px;background:${isEnough?'rgba(0,184,148,.1)':'rgba(231,76,60,.1)'};border:1px solid ${isEnough?'rgba(0,184,148,.3)':'rgba(231,76,60,.3)'};color:${statusColor};">
+      ${statusIcon} ${isEnough ? 'الرصيد كافي' : '⚠️ لا يوجد رصيد كافٍ!'} - مطلوب: ${reqKg.toLocaleString('ar-EG')} كجم | متاح: ${kg.toLocaleString('ar-EG')} كجم
+    </div>` : ''}
+  `;
 }
 
 // إضافة زriعة لقطاع
@@ -5456,37 +5591,103 @@ async function delZSZaria(secKey, zid){
   renderDashboard();
 }
 
-// إضافة علف لزريعة قطاع
+// ✅ إضافة علف لزريعة قطاع (مع الخصم التلقائي من المخزن)
 async function addZSFeed(secKey){
   const feedType = document.getElementById('zs-feed-type-' + secKey)?.value || '';
-  const weight = parseFloat(document.getElementById('zs-feed-qty-' + secKey)?.value) || 0;
-  const price = parseFloat(document.getElementById('zs-feed-price-' + secKey)?.value) || 0;
+  const rawVal = parseFloat(document.getElementById('zs-feed-qty-' + secKey)?.value) || 0;
+  const priceVal = parseFloat(document.getElementById('zs-feed-price-' + secKey)?.value) || 0;
   const date = document.getElementById('zs-feed-date-' + secKey)?.value || '';
   const notes = document.getElementById('zs-feed-notes-' + secKey)?.value || '';
   const float = zsFloatState[secKey] || 'float';
+  const unit = zsFeedUnitState[secKey] || 'kg';
+  const priceMode = zsPriceModeState[secKey] || 'unit';
 
-  if(!weight || weight <= 0){ alert('أدخل كمية صحيحة'); return; }
-  if(!date){ alert('أدخل التاريخ'); return; }
+  if(!rawVal || rawVal <= 0){ toast('❌ أدخل كمية صحيحة','err'); return; }
+  if(!date){ toast('❌ اختر التاريخ','err'); return; }
 
-  const feedData = { feedType, weight, cost: weight * price, price, date, notes, float, ts: Date.now() };
+  // تحويل القيمة إلى كيلو حسب الوحدة
+  let weightKg = 0;
+  let qtyLabel = '';
+  if(unit === 'kg'){
+    weightKg = rawVal;
+    qtyLabel = `${rawVal} كجم`;
+  } else if(unit === 'bag25'){
+    weightKg = rawVal * 25;
+    qtyLabel = `${rawVal} شيكارة 25 كجم (= ${weightKg} كجم)`;
+  } else if(unit === 'ton'){
+    weightKg = rawVal * 1000;
+    qtyLabel = `${rawVal} طن (= ${weightKg} كجم)`;
+  }
+
+  // ✅ التحقق من الرصيد وخصم المخزن
+  const key = sk(feedType, float);
+  const currentStock = getStock(feedType, float);
+  
+  if(!canSubtract(currentStock, unit, rawVal)){
+    const availableKg = stockToKg(currentStock);
+    return toast(`❌ لا يوجد رصيد كافٍ — المتاح: ${fmtStock(currentStock)} (${availableKg.toLocaleString('ar-EG')} كجم)`,'err');
+  }
+  
+  // خصم من المخزن
+  const newStock = subtractStock(currentStock, unit, rawVal);
+  await window.dbUpdate(window.dbRef(db, `store/${key}`), newStock);
+  
+  // حساب التكلفة
+  let totalCost = 0;
+  let unitPrice = 0;
+  if(priceMode === 'unit'){
+    unitPrice = priceVal;
+    totalCost = unit === 'bag25' ? (rawVal * priceVal) : unit === 'ton' ? (rawVal * priceVal) : (weightKg * priceVal);
+  } else {
+    totalCost = priceVal;
+    unitPrice = weightKg > 0 ? priceVal / weightKg : 0;
+  }
+
+  // حفظ بيانات علف الزريعة
+  const feedData = { 
+    feedType, 
+    weight: weightKg,
+    rawVal,
+    unit,
+    cost: totalCost, 
+    price: unitPrice, 
+    date, 
+    notes, 
+    float, 
+    ts: Date.now() 
+  };
   
   await window.dbPush(window.dbRef(db, 'sectors/' + secKey + '/zariaFeed'), feedData);
   
-  // تسجيل في السجل
+  // تسجيل في السجل الشامل (مع تفاصيل المخزن)
+  const beforeKg = stockToKg(currentStock);
+  const afterKg = stockToKg(newStock);
   await window.dbPush(window.dbRef(db, 'logs'), {
     type: 'zaria_feed',
     sector: secKey,
-    details: `علف ${feedType}%: ${weight} كجم`,
-    weight,
-    cost: weight * price,
+    feedType,
+    float,
+    details: `علف ${feedType}% ${float==='float'?'🌊 عايم':'⬇️ غاطس'}: ${qtyLabel}`,
+    weight: weightKg,
+    rawVal,
+    unit,
+    cost: totalCost,
+    unitPrice,
     date,
-    ts: Date.now()
+    time: new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',hour12:true}),
+    stockBefore: beforeKg.toFixed(1) + ' كجم',
+    stockAfter: afterKg.toFixed(1) + ' كجم',
+    remLabel: fmtStock(newStock),
+    ts: Date.now(),
+    notes
   });
 
-  toast('✅ تم إضافة علف الزريعة', 'ok');
+  const costMsg = totalCost > 0 ? ` | التكلفة: ${fmtCost(totalCost)}` : '';
+  toast(`✅ تم إخراج ${qtyLabel} علف ${feedType}% للزريعة${costMsg} | متبقي: ${fmtStock(newStock)}`, 'ok');
   toggleZSSectorFeedForm(secKey);
   renderZariaSectorsPage();
   renderZariaPage();
+  renderDashboard();
 }
 
 // حذف علف زريعة
