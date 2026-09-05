@@ -6826,7 +6826,7 @@ window.calcEditInvoice = function() {
   let newFishGross;
   if (window._eiOverrides.gross) {
     // المستخدم عدّل هذا الرقم يدوياً - نحترم قيمته
-    newFishGross = grossInput ? intVal(grossInput.value) : itemsGross;
+    newFishGross = grossInput ? floatVal2(grossInput.value) : itemsGross;
   } else {
     // حساب تلقائي من الأصناف
     newFishGross = itemsGross;
@@ -6847,10 +6847,10 @@ window.calcEditInvoice = function() {
   // استخدام حقل العمولة اليدوي
   const commManualEl = document.getElementById('ei-commission-manual');
   const commPct = commManualEl ? intVal(commManualEl.value) : intVal(document.getElementById('ei-commission')?.value);
-  const commAmt = Math.round((newFishGross * commPct) / 100);
+  const commAmt = parseFloat(((newFishGross * commPct) / 100).toFixed(2));
 
   // حساب الصافي تلقائياً في كل مرة
-  const computedNet = Math.max(Math.round(newFishGross - expTotal + addTotal - commAmt), 0);
+  const computedNet = Math.max(parseFloat((newFishGross - expTotal + addTotal - commAmt).toFixed(2)), 0);
 
   // تحديث عناصر واجهة المستخدم
   const expRow = document.getElementById('ei-exp-row');
@@ -6874,7 +6874,7 @@ window.calcEditInvoice = function() {
     if (!window._eiOverrides.net) {
       netInput.value = computedNet;
     }
-    const shownNet = intVal(netInput.value);
+    const shownNet = floatVal2(netInput.value);
     netLabel.textContent = formatNum(Math.max(shownNet, 0)) + ' ج.م';
   }
 };
@@ -6948,11 +6948,12 @@ window.saveEditInvoice = async function(invoiceId) {
   const newDateStr = new Date(newDateISO + 'T12:00:00').toLocaleDateString('en-GB'); 
   const newItems = (window._editItems || []).map((item, idx) => {
     const unit = document.getElementById('ei-unit-' + idx)?.value || item.unit || 'kg';
-    const qty = intVal(document.getElementById('ei-kg-' + idx)?.value);
-    const priceRaw = intVal(document.getElementById('ei-price-' + idx)?.value);
+    const qty = floatVal2(document.getElementById('ei-kg-' + idx)?.value);
+    const priceRaw = floatVal2(document.getElementById('ei-price-' + idx)?.value);
     const uDef = UNITS[unit] || UNITS.kg;
-    const kgEquiv = qty * uDef.kgFactor;
-    return { ...item, unit, unitLabel: uDef.label, qty, kg: kgEquiv, pricePerUnit: priceRaw, pricePerKg: +(priceRaw/uDef.kgFactor).toFixed(4), subtotal: Math.round(qty * priceRaw) };
+    const kgEquiv = parseFloat((qty * uDef.kgFactor).toFixed(2));
+    const subtotal = parseFloat((qty * priceRaw).toFixed(2));
+    return { ...item, unit, unitLabel: uDef.label, qty, kg: kgEquiv, pricePerUnit: priceRaw, pricePerKg: +(priceRaw/uDef.kgFactor).toFixed(4), subtotal };
   });
   // تأكيد آخر تحديث للحسابات قبل الحفظ (يتأكد أن الحقول متزامنة تماماً)
   calcEditInvoice();
@@ -6960,7 +6961,7 @@ window.saveEditInvoice = async function(invoiceId) {
   // استخدام إجمالي الأصناف الحالي في الحقل (يُحسب تلقائياً أو تم تعديله يدوياً)
   const grossInputEl = document.getElementById('ei-gross-input');
   const calcFishGross = newItems.reduce((s, i) => s + i.subtotal, 0);
-  const newFishGross = grossInputEl ? intVal(grossInputEl.value) : Math.round(calcFishGross);
+  const newFishGross = grossInputEl ? floatVal2(grossInputEl.value) : parseFloat(calcFishGross.toFixed(2));
   
   // تجهيز المصاريف المخصومة
   const newExpenses = (window._editExpenses || [])
@@ -6972,12 +6973,12 @@ window.saveEditInvoice = async function(invoiceId) {
     .filter(a => a.amount > 0 || a.name || a.desc)
     .map(a => ({ name: a.name || '', desc: a.desc || '', amount: Math.round(a.amount || 0) }));
   const addTotal = newAdditions.reduce((s, a) => s + a.amount, 0);
-  const newCommAmt = Math.round((newFishGross * newCommPct) / 100);
+  const newCommAmt = parseFloat(((newFishGross * newCommPct) / 100).toFixed(2));
   
   // استخدام القيمة الحالية لحقل الصافي (متزامنة تلقائياً أو معدّلة يدوياً)
   const netInputEl = document.getElementById('ei-net-input');
-  const calcNet = Math.max(Math.round(newFishGross - expTotal + addTotal - newCommAmt), 0);
-  const newNet = netInputEl ? Math.max(intVal(netInputEl.value), 0) : calcNet;
+  const calcNet = Math.max(parseFloat((newFishGross - expTotal + addTotal - newCommAmt).toFixed(2)), 0);
+  const newNet = netInputEl ? Math.max(floatVal2(netInputEl.value), 0) : calcNet;
   
   const diff = newNet - inv.total;
   try {
