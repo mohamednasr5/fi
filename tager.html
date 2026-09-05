@@ -1950,7 +1950,7 @@ function buildFishRowHTML(item) {
         <div class="fish-input-group">
           <label>الإجمالي</label>
           <input type="number" id="fish-subtotal-${id}"
-            value="${item.subtotal > 0 ? Math.round(item.subtotal) : ''}"
+            value="${item.subtotal > 0 ? item.subtotal : ''}"
             placeholder="0" readonly class="readonly-subtotal">
         </div>
       </div>
@@ -6308,7 +6308,13 @@ window.showToast = function(msg) {
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
 };
-function formatNum(n) { return Math.round(n || 0).toLocaleString('ar-EG'); }
+function formatNum(n) { 
+  const num = n || 0;
+  // إذا كان الرقم صحيحاً نعرضه بدون فواصل، وإلا نعرض رقمين عشريين
+  return Number.isInteger(num) || num % 1 === 0 
+    ? Math.round(num).toLocaleString('ar-EG')
+    : num.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 // أعداد صحيحة فقط في كل مكان - لا كسور
 function intVal(v) { return Math.round(parseFloat(v) || 0); }
 window.intVal = intVal;
@@ -8878,6 +8884,80 @@ window.showSectorInvoices = function(sectorName, btn) {
 // ============================================================
 const PRODUCTION_SECTORS_LIST = ['القطاع الأول','القطاع الثاني','القطاع الثالث','الصرف الوسطاني','الصرف سكة القطار','الصرف القنالي','المغزي'];
 
+// 🐟 دالة دمج الأسماء المتشابهة للأسماك
+// تجمع الأسماء المتغيرة لنفس نوع السمك تحت اسم واحد موحد
+// تستخدم مطابقة ذكية (جزئية) لتغطية جميع أشكال كتابة الاسم
+window.normalizeFishName = function(name) {
+  if (!name) return 'غير محدد';
+  
+  // تنظيف الاسم من المسافات الزائدة
+  const cleanName = name.trim();
+  
+  // قواعد الدمج - كل مجموعة تحدد الاسم الأساسي والكلمات الدالة
+  // إذا احتوى اسم السمك على أي كلمة من keywords يُدمج تحت base
+  const mergeRules = [
+    // طوبار وجميع متغيراته (طوبار، طوبار مغير، طوبار دور، طوبار ع/كبير/صغير)
+    {
+      base: 'طوبار',
+      keywords: ['طوبار'],
+      exclude: [] // لا استثناءات
+    },
+    // بوري وجميع متغيراته (بوري، اوربي، بوري مغير، بوري ع/كبير)
+    {
+      base: 'بوري',
+      keywords: ['بوري', 'اوربي'],
+      exclude: []
+    },
+    // بلطي وجميع متغيراته
+    {
+      base: 'بلطي',
+      keywords: ['بلطي'],
+      exclude: []
+    },
+    // دباشي وجميع متغيراته
+    {
+      base: 'دباشي',
+      keywords: ['دباشي'],
+      exclude: []
+    },
+    // قراميط وجميع متغيراته
+    {
+      base: 'قراميط',
+      keywords: ['قراميط'],
+      exclude: []
+    },
+    // سوبر وجميع متغيراته
+    {
+      base: 'سوبر',
+      keywords: ['سوبر'],
+      exclude: ['سوبر ماركت'] // استثناء
+    }
+  ];
+  
+  // البحث عن اسم موحد باستخدام المطابقة الجزئية
+  for (const rule of mergeRules) {
+    // التحقق أولاً من الاستثناءات
+    let isExcluded = false;
+    for (const exc of rule.exclude) {
+      if (cleanName.includes(exc)) {
+        isExcluded = true;
+        break;
+      }
+    }
+    if (isExcluded) continue;
+    
+    // التحقق من وجود أي كلمة دالة في الاسم
+    for (const keyword of rule.keywords) {
+      if (cleanName.includes(keyword)) {
+        return rule.base;
+      }
+    }
+  }
+  
+  // إذا لم يتم العثور على قاعدة دمج، نعيد الاسم كما هو
+  return cleanName;
+};
+
 window.populateProductionFilters = function() {
   const sectorSel = document.getElementById('prod-sector');
   const fishSel = document.getElementById('prod-fish');
@@ -8937,13 +9017,20 @@ window.renderProduction = function() {
       matchedInvoiceIds.add(id);
     }
     (inv.items || []).forEach(item => {
-      if (fish && item.fish !== fish) return;
+      // ★ استخدام الاسم الموحد بعد الدمج
+      const originalName = item.fish || 'غير محدد';
+      const normalizedName = window.normalizeFishName(originalName);
+      
+      // فلتر حسب النوع المختار (نقارن بالاسم الموحد أيضاً)
+      if (fish && normalizedName !== fish && originalName !== fish) return;
+      
       const kg = item.kg || 0;
-      const name = item.fish || 'غير محدد';
-      if (!byFish[name]) byFish[name] = { kg: 0, revenue: 0, items: 0 };
-      byFish[name].kg += kg;
-      byFish[name].revenue += (item.subtotal || 0);
-      byFish[name].items++;
+      // ★ التجميع حسب الاسم الموحد وليس الأصلي
+      if (!byFish[normalizedName]) byFish[normalizedName] = { kg: 0, revenue: 0, items: 0, originalNames: new Set() };
+      byFish[normalizedName].kg += kg;
+      byFish[normalizedName].revenue += (item.subtotal || 0);
+      byFish[normalizedName].items++;
+      byFish[normalizedName].originalNames.add(originalName);
       grandKg += kg;
     });
   });
@@ -9008,9 +9095,17 @@ window.renderProduction = function() {
       if (entries.length === 0) {
         breakdownList.innerHTML = '<div class="empty-state"><div class="empty-icon">🐟</div><div class="empty-text">لا توجد بيانات مبيعات ضمن هذا الفلتر</div></div>';
       } else {
-        breakdownList.innerHTML = entries.map(([name, d]) => `
+        breakdownList.innerHTML = entries.map(([name, d]) => {
+          // ★ إظهار الأسماء الأصلية المدمجة
+          const mergedNames = d.originalNames && d.originalNames.size > 1 
+            ? `<div style="font-size:9px;color:var(--gold);margin-top:2px">📌 يشمل: ${Array.from(d.originalNames).join(' + ')}</div>` 
+            : '';
+          return `
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:12px;margin-bottom:7px">
-            <div style="font-size:13px;font-weight:800;color:var(--text-primary)">🐟 ${name}</div>
+            <div>
+              <div style="font-size:13px;font-weight:800;color:var(--text-primary)">🐟 ${name}</div>
+              ${mergedNames}
+            </div>
             <div style="text-align:left;font-size:10px;color:var(--text-secondary);line-height:1.7">
               <div>⚖️ ${(d.kg/1000).toLocaleString('ar-EG',{maximumFractionDigits:2})} طن</div>
               <div>🏋️ ${formatNum(d.kg)} كيلو</div>
@@ -9018,7 +9113,7 @@ window.renderProduction = function() {
               <div style="color:var(--cyan-glow)">💰 ${formatNum(d.revenue)} ج.م</div>
             </div>
           </div>
-        `).join('');
+        `}).join('');
       }
     }
   }
