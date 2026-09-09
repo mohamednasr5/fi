@@ -4190,10 +4190,28 @@ async function saveZariaFeed(k, isFromPage=false) {
 }
 
 
+// حذف علف زريعة قطاع (مع إرجاع الكمية للمخزن الرئيسي)
 async function delZariaFeed(secKey, zfid) {
-  if(!confirm('حذف هذا السجل من علف الزريعة؟')) return;
+  if(!confirm('⚠️ هل أنت متأكد من حذف هذا السجل؟\n\nسيتم:\n• حذف سجل العلف\n• إرجاع الكمية للمخزن الرئيسي')) return;
+  
+  // جلب بيانات العلف قبل الحذف
+  const feedData = (state.sectors[secKey]?.zariaFeed || {})[zfid];
+  if(!feedData) return;
+
+  // إرجاع الكمية للمخزن الرئيسي
+  const type = feedData.feedType;
+  const float = feedData.float || 'float';
+  const currentStock = getStock(type, float);
+  const newStock = addStockDelta(currentStock, 'kg', feedData.weight, 'kg');
+
+  await window.dbUpdate(window.dbRef(db, `store/${type}_${float}`), newStock);
   await window.dbRemove(window.dbRef(db, 'sectors/' + secKey + '/zariaFeed/' + zfid));
-  toast('🗑️ تم حذف علف الزريعة الكلي للعملية', 'ok');
+  
+  toast(`🗑️ تم الحذف وإرجاع ${feedData.weight?.toFixed(1) || 0} كجم علف ${type}% للمخزن`, 'ok');
+  renderZariaSectorsPage();
+  renderZariaPage();
+  renderDashboard();
+  fStockInfo();
 }
 function renderZariaFeedForm(k, isPage=false) {
   const suffix = isPage ? 'p-'+k : k;
@@ -5712,13 +5730,28 @@ async function addZSFeed(secKey){
   renderDashboard();
 }
 
-// حذف علف زريعة
+// حذف علف زريعة قطاع (مع إرجاع الكمية للمخزن الرئيسي)
 async function delZSFeed(secKey, fid){
-  if(!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+  if(!confirm('⚠️ هل أنت متأكد من حذف هذا السجل؟\n\nسيتم:\n• حذف سجل العلف\n• إرجاع الكمية للمخزن الرئيسي')) return;
+  
+  // جلب بيانات العلف قبل الحذف
+  const feedData = (state.sectors[secKey]?.zariaFeed || {})[fid];
+  if(!feedData) return;
+
+  // إرجاع الكمية للمخزن الرئيسي
+  const type = feedData.feedType;
+  const float = feedData.float || 'float';
+  const currentStock = getStock(type, float);
+  const newStock = addStockDelta(currentStock, 'kg', feedData.weight, 'kg');
+
+  await window.dbUpdate(window.dbRef(db, `store/${type}_${float}`), newStock);
   await window.dbRemove(window.dbRef(db, 'sectors/' + secKey + '/zariaFeed/' + fid));
-  toast('🗑️ تم حذف سجل العلف', 'ok');
+  
+  toast(`🗑️ تم الحذف وإرجاع ${feedData.weight?.toFixed(1) || 0} كجم علف ${type}% للمخزن`, 'ok');
   renderZariaSectorsPage();
   renderZariaPage();
+  renderDashboard();
+  fStockInfo();
 }
 
 // إضافة مصروف لزريعة قطاع
