@@ -7235,6 +7235,17 @@ async function delLog(lid){
     await window.dbUpdate(window.dbRef(db,'store/'+key),newStock);
     await window.dbRemove(window.dbRef(db,`logs/${lid}`));
     toast('🗑️ تم الحذف وإعادة الكمية للمخزن','ok');
+  } else if(l && l.type==='zaria_feed' && (l.weight || l.qty)){
+    const qtyKg=l.weight||l.qty||0;
+    const key=sk(l.feedType,l.float);
+    const current=getStock(l.feedType,l.float);
+    const newStock=addStockDelta(current,'ton',qtyKg/1000);
+    newStock.b25=Math.max(0,newStock.b25||0);
+    newStock.b50=Math.max(0,newStock.b50||0);
+    newStock.ton=Math.max(0,newStock.ton||0);
+    await window.dbUpdate(window.dbRef(db,'store/'+key),newStock);
+    await window.dbRemove(window.dbRef(db,`logs/${lid}`));
+    toast('🗑️ تم الحذف وإعادة الكمية للمخزن','ok');
   } else {
     await window.dbRemove(window.dbRef(db,`logs/${lid}`));
     toast('🗑️ تم الحذف','ok');
