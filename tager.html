@@ -3020,7 +3020,7 @@ function buildEnteredInvoicePDFHTML(inv, invoiceId) {
     </tbody>
   </table>
   <div class="footer">
-    <p>الحديدي للأسماك - الحاج أحمد الحديدي | ${new Date().toLocaleDateString('ar-EG')}</p>
+    <p>الحديدي للأسماك - الحاج أحمد الحديدي | ${new Date().toLocaleDateString('en-GB')}</p>
   </div>
   </body></html>`;
 }
@@ -3929,7 +3929,7 @@ window.printStatementModal = function() {
       </div>
       
       <div class="footer">
-        <p>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')} | نظام الحديدي للمحاسبة</p>
+        <p>تاريخ الطباعة: ${new Date().toLocaleDateString('en-GB')} | نظام الحديدي للمحاسبة</p>
       </div>
       
       <script>window.onload = function() { window.print(); }<\/script>
@@ -7796,7 +7796,7 @@ window.exportAllDataToPDF = async function() {
       </style></head><body>
       <h1>🐟 الحاج أحمد الحديدي - تجارة الأسماك</h1>
       <h2>📋 تقرير شامل لجميع البيانات</h2>
-      <div class="meta">📅 تاريخ التصدير: ${isoToArabicDate(getTodayISO())} | 🕒 ${new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>
+      <div class="meta">📅 تاريخ التصدير: ${isoToArabicDate(getTodayISO())} | 🕒 ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
 
       <div class="summary-grid">
         <div class="summary-card"><div class="lbl">عدد العملاء</div><div class="val">${formatNum(clientsArr.length)}</div></div>
@@ -7939,8 +7939,8 @@ function aoaToHTMLTable(rows) {
 
 // ✅ إصلاح: دالة محسّنة لتحويل الأوراق إلى HTML مع خطوط متوافقة
 function sheetsToHTML(sheets, mainTitle, subTitle) {
-  var today = new Date().toLocaleDateString('ar-EG', { day: '2-digit', month: 'long', year: 'numeric' });
-  var timeStr = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  var today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  var timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   var sheetsHTML = sheets.map(function (s) {
     return '<section class="sheet-section">' + aoaToHTMLTable(s.data) + '</section>';
   }).join('');
@@ -9429,6 +9429,29 @@ window.addEventListener('DOMContentLoaded', function() {
 // INIT
 // ============================================================
 init3DBackground();
+</script>
+
+<!-- ===== توحيد تنسيق التاريخ: إنجليزي دائماً (mm/dd/yyyy) في كل حقول التاريخ ===== -->
+<style>
+  input[type="date"]{direction:ltr !important;text-align:center;unicode-bidi:plaintext;font-variant-numeric:lining-nums;}
+  input[type="date"]::-webkit-datetime-edit{direction:ltr;unicode-bidi:isolate;}
+</style>
+<script>
+(function(){
+  function fixDate(el){
+    if(el.getAttribute('lang')!=='en-US') el.setAttribute('lang','en-US');
+    if(el.getAttribute('dir')!=='ltr') el.setAttribute('dir','ltr');
+  }
+  function scan(root){
+    if(!root||!root.querySelectorAll) return;
+    if(root.matches && root.matches('input[type="date"]')) fixDate(root);
+    root.querySelectorAll('input[type="date"]').forEach(fixDate);
+  }
+  scan(document);
+  new MutationObserver(function(muts){
+    muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1) scan(n); }); });
+  }).observe(document.documentElement,{childList:true,subtree:true});
+})();
 </script>
 </body>
 </html>
